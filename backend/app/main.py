@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import router as api_v1_router
+from app.api.v1.endpoints.ws import router as ws_router
 
 app = FastAPI(
     title="AI Teaching Platform",
@@ -21,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(api_v1_router, prefix="/api/v1")
+app.include_router(ws_router)  # WebSocket routes at root level (ws://host/ws/...)
 
 
 @app.get("/")

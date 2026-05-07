@@ -26,8 +26,14 @@ class Assignment(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     lesson_id = Column(String(36), ForeignKey("lessons.id"), nullable=False)
-    assignment_type = Column(Enum(AssignmentType), nullable=False)
-    status = Column(Enum(AssignmentStatus), default=AssignmentStatus.DRAFT)
+    assignment_type = Column(
+        Enum(AssignmentType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
+    status = Column(
+        Enum(AssignmentStatus, values_callable=lambda x: [e.value for e in x]),
+        default=AssignmentStatus.DRAFT,
+    )
     questions_data = Column(JSON, nullable=True)
     settings_data = Column(JSON, nullable=True)
     session_token = Column(String(255), unique=True, nullable=True)

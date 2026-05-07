@@ -41,6 +41,20 @@ class StudentAnswerRequest(BaseModel):
 
 
 class TeacherGradeRequest(BaseModel):
-    response_id: str
     grade: str
+    is_correct: Optional[bool] = None
     comment: Optional[str] = None
+
+
+class GenerateRequest(BaseModel):
+    exclude_terms: List[str] = []
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage] = []

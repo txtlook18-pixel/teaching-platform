@@ -59,7 +59,12 @@ async function handleJoin() {
       session_token: token.value,
     })
     localStorage.setItem('student_session', JSON.stringify(res.data))
-    router.push(`/play/${res.data.session_id}`)
+    const isPhoneMode = res.data.settings_data?.mode === 'individual'
+    if (isPhoneMode) {
+      router.push(`/wait/${res.data.session_id}`)
+    } else {
+      router.push(`/play/${res.data.session_id}`)
+    }
   } catch (e: any) {
     error.value = e.response?.data?.detail || 'Ошибка подключения'
   } finally {

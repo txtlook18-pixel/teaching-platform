@@ -19,7 +19,10 @@ class Lesson(Base):
     teacher_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     title = Column(String(500), nullable=False)
     language = Column(String(10), default="ru")
-    source_type = Column(Enum(SourceType), default=SourceType.TEXT)
+    source_type = Column(
+        Enum(SourceType, values_callable=lambda x: [e.value for e in x]),
+        default=SourceType.TEXT,
+    )
     source_content = Column(Text, nullable=True)
     cluster_data = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

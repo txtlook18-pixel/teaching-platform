@@ -47,7 +47,7 @@ Language: {language}"""
         return data["questions"]
 
     async def generate_cases(
-        self, topic, content, case_type, count=2, language="ru"
+        self, topic, content, case_type, count=2, language="ru", exclude_cases=[]
     ) -> List[Dict[str, Any]]:
         prompt = f"""Create {count} cases for {case_type} about "{topic}".
 Content: {content[:2000]}
@@ -58,9 +58,10 @@ Language: {language}"""
         return data["cases"]
 
     async def generate_flashcards(
-        self, content, count=10, language="ru"
+        self, content, count=10, language="ru", exclude_terms=[]
     ) -> List[Dict[str, str]]:
-        prompt = f"""Extract {count} key terms as flashcards.
+        exclude_note = f"\nDO NOT include these terms (already shown): {', '.join(exclude_terms)}" if exclude_terms else ""
+        prompt = f"""Extract {count} key terms as flashcards.{exclude_note}
 Content: {content[:2000]}
 Return ONLY JSON: {{"cards": [{{"term": "...", "definition": "..."}}]}}
 Language: {language}"""
@@ -71,9 +72,26 @@ Language: {language}"""
     async def generate_reference_retelling(
         self, content, topic, language="ru"
     ) -> str:
-        prompt = f"""Write a 100-150 word summary of "{topic}".
+        prompt = f"""Create a structured educational report about "{topic}" using these sections:
+## Краткое изложение
+## Ключевые идеи
+## Важные понятия
+## Вывод
+
 Content: {content[:2000]}
 Language: {language}"""
+        return await self._generate(prompt)
+
+    async def chat_response(
+        self, content, topic, history, message, language="ru"
+    ) -> str:
+        context = "\n".join([f"{h['role'].capitalize()}: {h['content']}" for h in history[-5:]])
+        prompt = f"""You are an AI tutor for topic "{topic}".
+Material: {content[:1500]}
+Previous conversation:
+{context}
+User: {message}
+Answer briefly in {language}:"""
         return await self._generate(prompt)
 
     async def analyze_content(self, content, language="ru") -> Dict[str, Any]:
@@ -84,6 +102,18 @@ Content: {content[:2000]}
 Language: {language}"""
         text = await self._generate(prompt)
         return self._parse_json(text)
+
+    async def generate_extra_topics(
+        self, content, main_topic, exclude_topics, count=5, language="ru"
+    ) -> List[str]:
+        exclude_note = f"\nDO NOT repeat: {', '.join(exclude_topics)}" if exclude_topics else ""
+        prompt = f"""Generate {count} new subtopics about "{main_topic}".{exclude_note}
+Content: {content[:1500]}
+Return ONLY JSON: {{"topics": ["topic 1", "topic 2", ...]}}
+Language: {language}"""
+        text = await self._generate(prompt)
+        data = self._parse_json(text)
+        return data["topics"]
 
     async def health_check(self) -> bool:
         try:

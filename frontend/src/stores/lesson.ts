@@ -40,6 +40,12 @@ export const useLessonStore = defineStore('lesson', () => {
     return res.data
   }
 
+  async function fetchLessonUrl(id: string) {
+    const res = await apiClient.post<Lesson>(`/lessons/${id}/fetch-url`)
+    currentLesson.value = res.data
+    return res.data
+  }
+
   async function analyzeLesson(id: string) {
     const res = await apiClient.post<Lesson>(`/lessons/${id}/analyze`)
     currentLesson.value = res.data
@@ -53,5 +59,5 @@ export const useLessonStore = defineStore('lesson', () => {
     lessons.value = lessons.value.filter((l) => l.id !== id)
   }
 
-  return { lessons, currentLesson, loading, fetchLessons, fetchLesson, createLesson, analyzeLesson, deleteLesson }
+  return { lessons, currentLesson, loading, fetchLessons, fetchLesson, createLesson, fetchLessonUrl, analyzeLesson, deleteLesson }
 })

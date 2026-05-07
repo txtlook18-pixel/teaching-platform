@@ -1,8 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.database import get_db
 from app.models.user import User
+from app.models.lesson import Lesson
+from app.models.assignment import Assignment
+from app.models.session import StudentSession, StudentResponse
 from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.core.security import hash_password, verify_password, create_access_token, get_current_user_id
 
@@ -51,3 +54,24 @@ async def get_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse.model_validate(user)
+
+
+@router.get("/stats")
+async def get_stats(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    lesson_ids_sq = select(Lesson.id).where(Lesson.teacher_id == user_id).scalar_subquery()
+    assignment_ids_sq = select(Assignment.id).where(Assignment.lesson_id.in_(lesson_ids_sq)).scalar_subquery()
+
+    lesson_count = await db.scalar(select(func.count()).where(Lesson.teacher_id == user_id))
+    assignment_count = await db.scalar(select(func.count()).where(Assignment.lesson_id.in_(lesson_ids_sq)))
+    session_count = await db.scalar(select(func.count()).where(StudentSession.assignment_id.in_(assignment_ids_sq)))
+    response_count = await db.scalar(select(func.count()).where(StudentResponse.assignment_id.in_(assignment_ids_sq)))
+
+    return {
+        "total_lessons": lesson_count or 0,
+        "total_assignments": assignment_count or 0,
+        "total_student_sessions": session_count or 0,
+        "total_responses": response_count or 0,
+    }

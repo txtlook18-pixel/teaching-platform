@@ -80,3 +80,22 @@ export interface TokenResponse {
   token_type: string
   user: User
 }
+
+export interface AssignmentHistoryItem {
+  id: string
+  lesson_id: string
+  lesson_title: string
+  assignment_type: AssignmentType
+  status: AssignmentStatus
+  question_count: number
+  student_count: number
+  response_count: number
+  created_at: string
+}
+
+export interface TeacherStats {
+  total_lessons: number
+  total_assignments: number
+  total_student_sessions: number
+  total_responses: number
+}

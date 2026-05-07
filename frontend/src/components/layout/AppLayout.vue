@@ -17,17 +17,22 @@
               Уроки
             </router-link>
             <router-link
-              to="/lessons/create"
-              class="btn-primary text-sm"
+              to="/archive"
+              class="text-gray-600 hover:text-blue-600 font-medium transition-colors"
+              active-class="text-blue-600"
             >
-              + Создать урок
+              История
             </router-link>
-            <div class="flex items-center gap-2 ml-4">
-              <span class="text-sm text-gray-500">{{ authStore.user?.username }}</span>
-              <button @click="handleLogout" class="text-sm text-red-500 hover:text-red-700">
-                Выйти
-              </button>
-            </div>
+<router-link
+              to="/profile"
+              class="flex items-center gap-1.5 ml-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+              active-class="text-blue-600"
+            >
+              <span class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+                {{ initials }}
+              </span>
+              {{ authStore.user?.username }}
+            </router-link>
           </nav>
         </div>
       </div>
@@ -40,14 +45,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
-function handleLogout() {
-  authStore.logout()
-  router.push('/login')
-}
+const initials = computed(() =>
+  (authStore.user?.username ?? '').slice(0, 2).toUpperCase() || '?',
+)
 </script>

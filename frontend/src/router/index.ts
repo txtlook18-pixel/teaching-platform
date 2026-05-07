@@ -24,6 +24,11 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/wait/:sessionId',
+    component: () => import('@/pages/StudentWaitPage.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/dashboard',
     component: () => import('@/pages/DashboardPage.vue'),
     meta: { requiresAuth: true },
@@ -41,6 +46,46 @@ const routes = [
   {
     path: '/lessons/:id/assignment/:assignmentId',
     component: () => import('@/pages/AssignmentPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/retelling/:assignmentId',
+    component: () => import('@/pages/RetellingPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/screen-test/:assignmentId',
+    component: () => import('@/pages/ScreenTestPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/phone-test/:assignmentId',
+    component: () => import('@/pages/PhoneTestPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/cards-group/:assignmentId',
+    component: () => import('@/pages/CardsGroupPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/analysis-group/:assignmentId',
+    component: () => import('@/pages/AnalysisGroupPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/battle-screen/:assignmentId',
+    component: () => import('@/pages/BattleScreenPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/archive',
+    component: () => import('@/pages/ArchivePage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    component: () => import('@/pages/ProfilePage.vue'),
     meta: { requiresAuth: true },
   },
 ]

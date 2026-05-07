@@ -26,6 +26,15 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     return jwt.encode(to_encode, settings.jwt_secret, algorithm="HS256")
 
 
+def decode_token(token: str) -> str | None:
+    """Decode JWT and return user_id (sub). Returns None on failure."""
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        return payload.get("sub")
+    except JWTError:
+        return None
+
+
 async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
