@@ -42,6 +42,8 @@ async def list_assignments(
 
 @router.get("/history")
 async def list_assignment_history(
+    limit: int = 50,
+    offset: int = 0,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -51,6 +53,8 @@ async def list_assignment_history(
         .join(Lesson)
         .where(Lesson.teacher_id == user_id)
         .order_by(Assignment.created_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     rows = result.all()
 

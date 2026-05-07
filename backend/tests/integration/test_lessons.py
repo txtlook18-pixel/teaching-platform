@@ -189,6 +189,81 @@ async def test_list_lessons_ordered_by_newest(client, auth_headers):
     assert titles.index("Third") < titles.index("Second") < titles.index("First")
 
 
+# --- topics/more ---
+
+async def test_topics_more_requires_auth(client, test_lesson):
+    r = await client.post(f"/api/v1/lessons/{test_lesson.id}/topics/more", json={"exclude": [], "count": 3})
+    assert r.status_code in (401, 403)
+
+
+async def test_topics_more_unknown_lesson(client, auth_headers):
+    r = await client.post(
+        "/api/v1/lessons/no-such-id/topics/more",
+        json={"exclude": [], "count": 3},
+        headers=auth_headers,
+    )
+    assert r.status_code == 404
+
+
+async def test_topics_more_returns_topics(client, auth_headers, test_lesson):
+    mock_topics = ["Topic X", "Topic Y", "Topic Z"]
+
+    with patch("app.api.v1.endpoints.lessons.get_ai_provider") as mock_factory:
+        mock_ai = AsyncMock()
+        mock_ai.generate_extra_topics = AsyncMock(return_value=mock_topics)
+        mock_factory.return_value = mock_ai
+
+        r = await client.post(
+            f"/api/v1/lessons/{test_lesson.id}/topics/more",
+            json={"exclude": [], "count": 3},
+            headers=auth_headers,
+        )
+
+    assert r.status_code == 200
+    data = r.json()
+    assert "topics" in data
+    assert data["topics"] == mock_topics
+
+
+async def test_topics_more_passes_exclude_list(client, auth_headers, test_lesson):
+    exclude = ["Already Used Topic"]
+
+    with patch("app.api.v1.endpoints.lessons.get_ai_provider") as mock_factory:
+        mock_ai = AsyncMock()
+        mock_ai.generate_extra_topics = AsyncMock(return_value=["New Topic"])
+        mock_factory.return_value = mock_ai
+
+        await client.post(
+            f"/api/v1/lessons/{test_lesson.id}/topics/more",
+            json={"exclude": exclude, "count": 1},
+            headers=auth_headers,
+        )
+
+        call_kwargs = mock_ai.generate_extra_topics.call_args
+        assert call_kwargs.kwargs.get("exclude_topics") == exclude or exclude in call_kwargs.args
+
+
+async def test_topics_more_no_content(client, auth_headers, db, test_user):
+    from app.models.lesson import Lesson, SourceType
+    empty_lesson = Lesson(
+        teacher_id=test_user.id,
+        title="Empty",
+        source_content="",
+        language="en",
+        source_type=SourceType.TEXT,
+    )
+    db.add(empty_lesson)
+    await db.commit()
+    await db.refresh(empty_lesson)
+
+    r = await client.post(
+        f"/api/v1/lessons/{empty_lesson.id}/topics/more",
+        json={"exclude": [], "count": 3},
+        headers=auth_headers,
+    )
+    assert r.status_code == 400
+
+
 # --- helper ---
 
 async def _get_user_id(client, auth_headers) -> str:

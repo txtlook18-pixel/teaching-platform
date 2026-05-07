@@ -98,3 +98,56 @@ async def test_login_returns_valid_token(client, test_user):
     me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.status_code == 200
     assert me.json()["id"] == test_user.id
+
+
+# --- stats ---
+
+async def test_stats_requires_auth(client):
+    r = await client.get("/api/v1/auth/stats")
+    assert r.status_code in (401, 403)
+
+
+async def test_stats_zeros_for_new_user(client, auth_headers):
+    r = await client.get("/api/v1/auth/stats", headers=auth_headers)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total_lessons"] == 0
+    assert data["total_assignments"] == 0
+    assert data["total_student_sessions"] == 0
+    assert data["total_responses"] == 0
+
+
+async def test_stats_counts_lessons(client, auth_headers, test_lesson):
+    r = await client.get("/api/v1/auth/stats", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json()["total_lessons"] == 1
+
+
+async def test_stats_counts_assignments(client, auth_headers, test_assignment):
+    r = await client.get("/api/v1/auth/stats", headers=auth_headers)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total_lessons"] == 1
+    assert data["total_assignments"] == 1
+
+
+async def test_stats_isolates_teachers(client, db, auth_headers):
+    from app.models.user import User
+    from app.models.lesson import Lesson, SourceType
+    from app.core.security import hash_password
+
+    other = User(email="stats_other@test.com", username="Other2", hashed_password=hash_password("x"))
+    db.add(other)
+    await db.commit()
+    await db.refresh(other)
+
+    other_lesson = Lesson(
+        teacher_id=other.id, title="Other",
+        source_content="x", language="en", source_type=SourceType.TEXT,
+    )
+    db.add(other_lesson)
+    await db.commit()
+
+    r = await client.get("/api/v1/auth/stats", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json()["total_lessons"] == 0

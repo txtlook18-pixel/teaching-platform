@@ -234,6 +234,110 @@ async def test_finish_assignment(client, test_assignment, auth_headers):
 
 # --- grade response ---
 
+# --- history ---
+
+async def test_history_requires_auth(client):
+    r = await client.get("/api/v1/assignments/history")
+    assert r.status_code in (401, 403)
+
+
+async def test_history_empty(client, auth_headers):
+    r = await client.get("/api/v1/assignments/history", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+async def test_history_returns_assignment_with_lesson_title(client, test_assignment, auth_headers):
+    r = await client.get("/api/v1/assignments/history", headers=auth_headers)
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    item = data[0]
+    assert item["id"] == test_assignment.id
+    assert item["lesson_title"] == "Test Lesson"
+    assert item["assignment_type"] == "test"
+    assert item["student_count"] == 0
+    assert item["response_count"] == 0
+
+
+async def test_history_isolates_teachers(client, db, test_assignment, auth_headers):
+    from app.models.user import User
+    from app.models.lesson import Lesson, SourceType
+    from app.models.assignment import Assignment, AssignmentType
+    from app.core.security import hash_password, create_access_token
+
+    other = User(email="other@test.com", username="Other", hashed_password=hash_password("x"))
+    db.add(other)
+    await db.commit()
+    await db.refresh(other)
+
+    other_lesson = Lesson(
+        teacher_id=other.id, title="Other Lesson",
+        source_content="x", language="en", source_type=SourceType.TEXT,
+    )
+    db.add(other_lesson)
+    await db.commit()
+    await db.refresh(other_lesson)
+
+    db.add(Assignment(lesson_id=other_lesson.id, assignment_type=AssignmentType.CARDS))
+    await db.commit()
+
+    r = await client.get("/api/v1/assignments/history", headers=auth_headers)
+    assert r.status_code == 200
+    ids = [item["id"] for item in r.json()]
+    assert test_assignment.id in ids
+    assert all(item["lesson_title"] == "Test Lesson" for item in r.json())
+
+
+async def test_history_newest_first(client, db, test_lesson, auth_headers):
+    from app.models.assignment import Assignment, AssignmentType
+    from datetime import datetime, timedelta
+
+    a1 = Assignment(lesson_id=test_lesson.id, assignment_type=AssignmentType.TEST)
+    a2 = Assignment(lesson_id=test_lesson.id, assignment_type=AssignmentType.CARDS)
+    db.add_all([a1, a2])
+    await db.commit()
+    await db.refresh(a1)
+    await db.refresh(a2)
+
+    r = await client.get("/api/v1/assignments/history", headers=auth_headers)
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 2
+    dates = [item["created_at"] for item in items]
+    assert dates == sorted(dates, reverse=True)
+
+
+async def test_history_pagination(client, db, test_lesson, auth_headers):
+    from app.models.assignment import Assignment, AssignmentType
+
+    assignments = [
+        Assignment(lesson_id=test_lesson.id, assignment_type=AssignmentType.TEST)
+        for _ in range(5)
+    ]
+    db.add_all(assignments)
+    await db.commit()
+
+    r_all = await client.get("/api/v1/assignments/history", headers=auth_headers)
+    assert len(r_all.json()) == 5
+
+    r_page = await client.get(
+        "/api/v1/assignments/history?limit=2&offset=0", headers=auth_headers
+    )
+    assert len(r_page.json()) == 2
+
+    r_offset = await client.get(
+        "/api/v1/assignments/history?limit=2&offset=2", headers=auth_headers
+    )
+    assert len(r_offset.json()) == 2
+
+    first_ids = {item["id"] for item in r_page.json()}
+    second_ids = {item["id"] for item in r_offset.json()}
+    assert first_ids.isdisjoint(second_ids)
+
+
+# --- grade response ---
+
 async def test_grade_response(client, test_assignment, auth_headers, db):
     token = await _activate(client, test_assignment.id, auth_headers)
 
