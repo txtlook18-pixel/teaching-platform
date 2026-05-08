@@ -3,8 +3,10 @@ from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.lessons import router as lessons_router
 from app.api.v1.endpoints.assignments import router as assignments_router
 from app.api.v1.endpoints.ai import router as ai_router
+from app.api.v1.endpoints.health import router as health_router
 
 router = APIRouter()
+router.include_router(health_router)
 router.include_router(auth_router)
 router.include_router(lessons_router)
 router.include_router(assignments_router)

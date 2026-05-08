@@ -5,7 +5,7 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
-
+.env.prod
 # Node
 node_modules/
 dist/
@@ -18,6 +18,11 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test artifacts
+backend/.coverage
+backend/coverage_html/
+frontend/test-results/
 
 # Docker volumes
 postgres_data/

@@ -24,10 +24,25 @@ npm run dev
 ```
 Сайт: http://localhost:5173
 
-### 3. Docker (с базой данных)
+### 3. Docker — Development
 ```bash
 docker-compose -f docker-compose.dev.yml up
 ```
+
+### 4. Docker — Production (для демонстрации)
+```bash
+# Шаг 1: создать файл с переменными окружения
+cp .env.prod.example .env.prod
+
+# Шаг 2: открыть .env.prod и заполнить:
+#   POSTGRES_PASSWORD=придумай_пароль
+#   JWT_SECRET=длинная_случайная_строка
+#   CLAUDE_API_KEY=sk-ant-...  (или GITHUB_TOKEN если используешь GitHub Models)
+
+# Шаг 3: запустить
+docker-compose -f docker-compose.prod.yml up --build
+```
+Сайт откроется на http://localhost (порт 80)
 
 ## Стек
 - **Backend**: FastAPI + PostgreSQL + SQLAlchemy (async)
