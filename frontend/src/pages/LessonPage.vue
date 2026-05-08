@@ -55,10 +55,10 @@
             <p class="text-xs text-gray-400">Сложность</p>
             <p class="font-medium capitalize mt-1">{{ lesson.cluster_data.difficulty_estimate }}</p>
           </div>
-          <div>
+          <router-link :to="`/lessons/${lesson.id}/questions`" class="block hover:opacity-70 transition-opacity cursor-pointer">
             <p class="text-xs text-gray-400">Вопросов рекомендовано</p>
-            <p class="font-medium mt-1">{{ lesson.cluster_data.suggested_question_count }}</p>
-          </div>
+            <p class="font-medium mt-1 text-blue-600">{{ lesson.cluster_data.suggested_question_count }}</p>
+          </router-link>
         </div>
       </div>
 

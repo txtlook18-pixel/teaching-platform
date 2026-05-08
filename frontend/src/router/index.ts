@@ -2,7 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
-  { path: '/', redirect: '/dashboard' },
+  {
+    path: '/',
+    component: () => import('@/pages/LandingPage.vue'),
+    meta: { requiresAuth: false },
+  },
   {
     path: '/login',
     component: () => import('@/pages/LoginPage.vue'),
@@ -41,6 +45,11 @@ const routes = [
   {
     path: '/lessons/:id',
     component: () => import('@/pages/LessonPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/lessons/:id/questions',
+    component: () => import('@/pages/QuestionsPreviewPage.vue'),
     meta: { requiresAuth: true },
   },
   {
@@ -97,6 +106,9 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const authStore = useAuthStore()
+  if (to.path === '/' && authStore.isAuthenticated) {
+    return '/dashboard'
+  }
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return '/login'
   }
