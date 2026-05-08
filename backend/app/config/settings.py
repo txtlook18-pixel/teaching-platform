@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     use_cache: bool = True
     cache_ttl: int = 3600
 
+    # Email / SMTP
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 465
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_use_tls: bool = True
+    frontend_url: str = "http://localhost:5173"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

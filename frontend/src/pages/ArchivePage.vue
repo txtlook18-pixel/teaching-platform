@@ -80,6 +80,7 @@
                 </td>
                 <td class="px-4 py-3">
                   <router-link
+                    v-if="item.status === 'active'"
                     :to="`/lessons/${item.lesson_id}/assignment/${item.id}`"
                     class="text-blue-600 hover:text-blue-800 text-xs font-medium"
                   >

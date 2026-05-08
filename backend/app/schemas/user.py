@@ -1,13 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 from datetime import datetime
-
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-    telegram_username: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -19,7 +11,6 @@ class UserResponse(BaseModel):
     id: str
     email: str
     username: str
-    telegram_username: Optional[str] = None
     is_active: bool
     created_at: datetime
 
@@ -30,3 +21,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

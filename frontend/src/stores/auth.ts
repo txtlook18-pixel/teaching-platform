@@ -17,14 +17,12 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(res.data.user))
   }
 
-  async function register(email: string, username: string, password: string, telegram_username?: string) {
-    const res = await apiClient.post<TokenResponse>('/auth/register', {
-      email, username, password, telegram_username,
-    })
-    token.value = res.data.access_token
-    user.value = res.data.user
-    localStorage.setItem('access_token', res.data.access_token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
+  async function forgotPassword(email: string) {
+    await apiClient.post('/auth/forgot-password', { email })
+  }
+
+  async function resetPassword(resetToken: string, newPassword: string) {
+    await apiClient.post('/auth/reset-password', { token: resetToken, new_password: newPassword })
   }
 
   function logout() {
@@ -34,5 +32,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user')
   }
 
-  return { token, user, isAuthenticated, login, register, logout }
+  return { token, user, isAuthenticated, login, forgotPassword, resetPassword, logout }
 })

@@ -1,4 +1,4 @@
-from .user import UserCreate, UserLogin, UserResponse, TokenResponse
+from .user import UserLogin, UserResponse, TokenResponse, ForgotPasswordRequest, ResetPasswordRequest
 from .lesson import LessonCreate, LessonUpdate, LessonResponse
 from .assignment import (
     AssignmentCreate, AssignmentResponse,
@@ -6,7 +6,8 @@ from .assignment import (
 )
 
 __all__ = [
-    "UserCreate", "UserLogin", "UserResponse", "TokenResponse",
+    "UserLogin", "UserResponse", "TokenResponse",
+    "ForgotPasswordRequest", "ResetPasswordRequest",
     "LessonCreate", "LessonUpdate", "LessonResponse",
     "AssignmentCreate", "AssignmentResponse",
     "StudentJoinRequest", "StudentAnswerRequest", "TeacherGradeRequest",

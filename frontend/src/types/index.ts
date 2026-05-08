@@ -2,7 +2,6 @@ export interface User {
   id: string
   email: string
   username: string
-  telegram_username?: string
   is_active: boolean
   created_at: string
 }

@@ -4,8 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   {
     path: '/',
-    component: () => import('@/pages/LandingPage.vue'),
-    meta: { requiresAuth: false },
+    redirect: '/login',
   },
   {
     path: '/login',
@@ -13,8 +12,13 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/register',
-    component: () => import('@/pages/RegisterPage.vue'),
+    path: '/forgot-password',
+    component: () => import('@/pages/ForgotPasswordPage.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/reset-password',
+    component: () => import('@/pages/ResetPasswordPage.vue'),
     meta: { requiresAuth: false },
   },
   {
@@ -106,7 +110,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const authStore = useAuthStore()
-  if (to.path === '/' && authStore.isAuthenticated) {
+  if (to.path === '/login' && authStore.isAuthenticated) {
     return '/dashboard'
   }
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
