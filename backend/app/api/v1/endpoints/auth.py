@@ -31,7 +31,7 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        raise HTTPException(status_code=401, detail="error.invalid_credentials")
 
     token = create_access_token({"sub": user.id})
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
@@ -45,7 +45,7 @@ async def get_me(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=404, detail="error.user_not_found")
     return UserResponse.model_validate(user)
 
 
@@ -89,7 +89,7 @@ async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depend
             logger.exception("Failed to send password reset email to %s", user.email)
 
     # Always return success to avoid leaking whether email exists
-    return {"message": "Если email зарегистрирован, на него отправлена ссылка для сброса пароля"}
+    return {"message": "ok"}
 
 
 @router.post("/reset-password")
@@ -101,12 +101,12 @@ async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(
         await redis.aclose()
 
     if not user_id:
-        raise HTTPException(status_code=400, detail="Ссылка недействительна или истёк срок действия")
+        raise HTTPException(status_code=400, detail="error.invalid_reset_token")
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=404, detail="error.user_not_found")
 
     user.hashed_password = hash_password(data.new_password)
     await db.commit()
@@ -118,4 +118,4 @@ async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(
     finally:
         await redis.aclose()
 
-    return {"message": "Пароль успешно изменён"}
+    return {"message": "error.password_changed"}

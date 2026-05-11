@@ -3,13 +3,13 @@
     <div class="card w-full max-w-md">
       <div class="text-center mb-8">
         <span class="text-5xl">🎓</span>
-        <h1 class="text-2xl font-bold mt-3 text-gray-900">AI Teaching Platform</h1>
-        <p class="text-gray-500 mt-1">Войдите в аккаунт</p>
+        <h1 class="text-2xl font-bold mt-3 text-gray-900">{{ t('login.title') }}</h1>
+        <p class="text-gray-500 mt-1">{{ t('login.subtitle') }}</p>
       </div>
 
       <form @submit.prevent="handleLogin" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('login.emailLabel') }}</label>
           <input
             v-model="form.email"
             type="email"
@@ -20,7 +20,7 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('login.passwordLabel') }}</label>
           <input
             v-model="form.password"
             type="password"
@@ -35,13 +35,13 @@
         </div>
 
         <button type="submit" class="btn-primary w-full py-3 text-base" :disabled="loading">
-          {{ loading ? 'Входим...' : 'Войти' }}
+          {{ loading ? t('login.submitting') : t('login.submit') }}
         </button>
       </form>
 
       <p class="text-center text-sm text-gray-500 mt-4">
         <router-link to="/forgot-password" class="text-blue-600 hover:underline">
-          Забыли пароль?
+          {{ t('login.forgotPassword') }}
         </router-link>
       </p>
     </div>
@@ -51,8 +51,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { translateApiError } from '@/i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -67,7 +70,7 @@ async function handleLogin() {
     await authStore.login(form.value.email, form.value.password)
     router.push('/dashboard')
   } catch (e: any) {
-    error.value = e.response?.data?.detail || 'Неверный email или пароль'
+    error.value = translateApiError(e.response?.data?.detail, t('login.defaultError'))
   } finally {
     loading.value = false
   }

@@ -21,7 +21,7 @@
               to="/dashboard"
               class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
             >
-              Завершить урок
+              {{ t('lesson.finishLesson') }}
             </router-link>
           </div>
         </div>
@@ -29,10 +29,10 @@
 
       <!-- Cluster info -->
       <div v-if="lesson.cluster_data" class="card mb-8">
-        <h2 class="font-semibold text-gray-700 mb-3">Анализ материала</h2>
+        <h2 class="font-semibold text-gray-700 mb-3">{{ t('lesson.analysis.title') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <p class="text-xs text-gray-400">Подтемы</p>
+            <p class="text-xs text-gray-400">{{ t('lesson.analysis.subtopics') }}</p>
             <div class="flex flex-wrap gap-1 mt-1">
               <span
                 v-for="sub in lesson.cluster_data.subtopics"
@@ -42,7 +42,7 @@
             </div>
           </div>
           <div>
-            <p class="text-xs text-gray-400">Ключевые понятия</p>
+            <p class="text-xs text-gray-400">{{ t('lesson.analysis.concepts') }}</p>
             <div class="flex flex-wrap gap-1 mt-1">
               <span
                 v-for="k in lesson.cluster_data.key_concepts"
@@ -52,11 +52,11 @@
             </div>
           </div>
           <div>
-            <p class="text-xs text-gray-400">Сложность</p>
+            <p class="text-xs text-gray-400">{{ t('lesson.analysis.difficulty') }}</p>
             <p class="font-medium capitalize mt-1">{{ lesson.cluster_data.difficulty_estimate }}</p>
           </div>
           <router-link :to="`/lessons/${lesson.id}/questions`" class="block hover:opacity-70 transition-opacity cursor-pointer">
-            <p class="text-xs text-gray-400">Вопросов рекомендовано</p>
+            <p class="text-xs text-gray-400">{{ t('lesson.analysis.suggestedCount') }}</p>
             <p class="font-medium mt-1 text-blue-600">{{ lesson.cluster_data.suggested_question_count }}</p>
           </router-link>
         </div>
@@ -64,7 +64,7 @@
 
       <!-- Create assignment -->
       <div class="card">
-        <h2 class="font-semibold text-gray-800 mb-4 text-lg">Создать задание</h2>
+        <h2 class="font-semibold text-gray-800 mb-4 text-lg">{{ t('lesson.createAssignment') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
           <button
             v-for="atype in assignmentTypes"
@@ -79,10 +79,10 @@
           </button>
         </div>
 
-        <!-- Q&A mode: source topics list -->
+        <!-- Q&A mode -->
         <div v-if="selectedType === 'retelling'" class="mt-6">
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-            <p class="text-sm font-medium text-gray-600 mb-3">Темы для обсуждения с ИИ</p>
+            <p class="text-sm font-medium text-gray-600 mb-3">{{ t('lesson.retelling.topics') }}</p>
             <ul v-if="lesson?.cluster_data?.subtopics?.length" class="space-y-2">
               <li
                 v-for="(sub, i) in lesson.cluster_data.subtopics"
@@ -93,34 +93,34 @@
                 {{ sub }}
               </li>
             </ul>
-            <p v-else class="text-sm text-gray-400">Сначала проанализируйте урок, чтобы увидеть темы.</p>
+            <p v-else class="text-sm text-gray-400">{{ t('lesson.retelling.noTopics') }}</p>
           </div>
           <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
-        <!-- Test mode: question count + timer + group/individual -->
+        <!-- Test mode -->
         <div v-else-if="selectedType === 'test'" class="mt-6 space-y-5">
           <div class="flex gap-4 items-end flex-wrap">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Вопросов</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.questionCount') }}</label>
               <input v-model.number="questionCount" type="number" min="3" max="20" class="input-field w-24" />
             </div>
             <div v-if="testMode === 'group'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Таймер (сек)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.timer') }}</label>
               <select v-model.number="timerSeconds" class="input-field w-28">
-                <option :value="30">30 сек</option>
-                <option :value="60">60 сек</option>
-                <option :value="90">90 сек</option>
-                <option :value="120">2 мин</option>
-                <option :value="0">Без таймера</option>
+                <option :value="30">{{ t('lesson.test.t30') }}</option>
+                <option :value="60">{{ t('lesson.test.t60') }}</option>
+                <option :value="90">{{ t('lesson.test.t90') }}</option>
+                <option :value="120">{{ t('lesson.test.t120') }}</option>
+                <option :value="0">{{ t('lesson.test.noTimer') }}</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Режим</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.test.mode') }}</label>
             <div class="grid grid-cols-2 gap-3 max-w-md">
               <button
                 type="button"
@@ -129,8 +129,8 @@
                 @click="testMode = 'group'"
               >
                 <span class="text-2xl">🖥️</span>
-                <p class="font-medium text-sm mt-2 text-gray-900">На экран</p>
-                <p class="text-xs text-gray-400 mt-0.5">Проектор, без QR-кода</p>
+                <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.screen') }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.screenDesc') }}</p>
               </button>
               <button
                 type="button"
@@ -139,33 +139,32 @@
                 @click="testMode = 'individual'"
               >
                 <span class="text-2xl">📱</span>
-                <p class="font-medium text-sm mt-2 text-gray-900">На телефоне</p>
-                <p class="text-xs text-gray-400 mt-0.5">QR-код для каждого</p>
+                <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.phone') }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.phoneDesc') }}</p>
               </button>
             </div>
           </div>
 
           <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
-        <!-- Cards mode: only card count -->
+        <!-- Cards mode -->
         <div v-else-if="selectedType === 'cards'" class="mt-6 flex gap-4 items-end">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Количество карточек</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.cards.countLabel') }}</label>
             <input v-model.number="questionCount" type="number" min="3" max="30" class="input-field w-24" />
           </div>
           <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
-        <!-- Analysis mode: pick a topic from lesson subtopics -->
+        <!-- Analysis mode -->
         <div v-else-if="selectedType === 'analysis'" class="mt-6">
-          <!-- All topics used → show button to generate new ones -->
           <div v-if="allTopicsUsed && !extraTopics.length" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
-            <p class="text-sm text-amber-800 font-medium mb-3">Все темы из урока уже использованы</p>
+            <p class="text-sm text-amber-800 font-medium mb-3">{{ t('lesson.analysisMode.allUsed') }}</p>
             <button
               class="px-5 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium transition-colors disabled:opacity-60"
               :disabled="loadingExtraTopics"
@@ -173,15 +172,15 @@
             >
               <span v-if="loadingExtraTopics" class="inline-flex items-center gap-2">
                 <span class="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block"></span>
-                Генерируем новые темы...
+                {{ t('lesson.analysisMode.generating') }}
               </span>
-              <span v-else>✨ Получить новые темы</span>
+              <span v-else>{{ t('lesson.analysisMode.getNew') }}</span>
             </button>
           </div>
 
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
             <p class="text-sm font-medium text-gray-600 mb-3">
-              {{ extraTopics.length ? 'Новые темы для кейса' : 'Выберите тему для кейса' }}
+              {{ extraTopics.length ? t('lesson.analysisMode.newTopics') : t('lesson.analysisMode.selectTopic') }}
             </p>
             <div v-if="availableAnalysisTopics.length" class="space-y-2">
               <button
@@ -206,25 +205,27 @@
                       : 'bg-gray-200 text-gray-600'"
                 >{{ i + 1 }}</span>
                 <span class="text-sm" :class="!extraTopics.length && usedAnalysisTopics.has(sub) ? 'text-gray-400 line-through' : 'text-gray-800'">{{ sub }}</span>
-                <span v-if="!extraTopics.length && usedAnalysisTopics.has(sub)" class="ml-auto text-xs text-gray-400">уже было</span>
+                <span v-if="!extraTopics.length && usedAnalysisTopics.has(sub)" class="ml-auto text-xs text-gray-400">
+                  {{ t('lesson.analysisMode.used') }}
+                </span>
                 <span v-else-if="selectedAnalysisTopic === sub" class="ml-auto text-blue-500 text-base">✓</span>
               </button>
             </div>
-            <p v-else class="text-sm text-gray-400">Сначала проанализируйте урок, чтобы увидеть темы.</p>
+            <p v-else class="text-sm text-gray-400">{{ t('lesson.analysisMode.noTopics') }}</p>
           </div>
           <button
             class="btn-primary px-8 py-2"
             :disabled="creating || !selectedAnalysisTopic"
             @click="handleCreateAssignment"
           >
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
-        <!-- Battle mode: discussion timer only -->
+        <!-- Battle mode -->
         <div v-else-if="selectedType === 'battle'" class="mt-6 space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Время на обсуждение</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.battle.timerLabel') }}</label>
             <div class="flex gap-2 flex-wrap">
               <button
                 v-for="opt in battleTimerOptions"
@@ -239,28 +240,28 @@
             </div>
           </div>
           <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
-        <!-- Standard mode: question count + timer -->
+        <!-- Standard mode -->
         <div v-else-if="selectedType" class="mt-6 flex gap-4 items-end">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Вопросов</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.questionCount') }}</label>
             <input v-model.number="questionCount" type="number" min="3" max="20" class="input-field w-24" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Таймер (сек)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.timer') }}</label>
             <select v-model.number="timerSeconds" class="input-field w-28">
-              <option :value="30">30 сек</option>
-              <option :value="60">60 сек</option>
-              <option :value="90">90 сек</option>
-              <option :value="120">2 мин</option>
-              <option :value="0">Без таймера</option>
+              <option :value="30">{{ t('lesson.test.t30') }}</option>
+              <option :value="60">{{ t('lesson.test.t60') }}</option>
+              <option :value="90">{{ t('lesson.test.t90') }}</option>
+              <option :value="120">{{ t('lesson.test.t120') }}</option>
+              <option :value="0">{{ t('lesson.test.noTimer') }}</option>
             </select>
           </div>
           <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? 'Создаём...' : 'Создать и запустить' }}
+            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
           </button>
         </div>
 
@@ -273,11 +274,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useLessonStore } from '@/stores/lesson'
 import { apiClient } from '@/services/api'
+import { translateApiError } from '@/i18n'
 import type { Lesson } from '@/types'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const lessonStore = useLessonStore()
@@ -302,23 +306,25 @@ const allTopicsUsed = computed(() => {
   const topics = lesson.value?.cluster_data?.subtopics ?? []
   return topics.length > 0 && topics.every(t => usedAnalysisTopics.value.has(t))
 })
+
 const battleTimer = ref(300)
-const battleTimerOptions = [
-  { value: 180, label: '3 мин' },
-  { value: 300, label: '5 мин' },
-  { value: 420, label: '7 мин' },
-  { value: 600, label: '10 мин' },
-]
+const battleTimerOptions = computed(() => [
+  { value: 180, label: t('lesson.battle.m3') },
+  { value: 300, label: t('lesson.battle.m5') },
+  { value: 420, label: t('lesson.battle.m7') },
+  { value: 600, label: t('lesson.battle.m10') },
+])
+
 const creating = ref(false)
 const createError = ref('')
 
-const assignmentTypes = [
-  { value: 'test', icon: '🧪', label: 'Тест', desc: 'Адаптивный тест' },
-  { value: 'battle', icon: '⚔️', label: 'Баттл', desc: 'Дискуссия' },
-  { value: 'analysis', icon: '🔍', label: 'Анализ', desc: 'Открытый ответ' },
-  { value: 'cards', icon: '🎴', label: 'Карточки', desc: 'Флеш-карты' },
-  { value: 'retelling', icon: '💬', label: 'Вопрос-ответ', desc: 'Чат с ИИ' },
-]
+const assignmentTypes = computed(() => [
+  { value: 'test', icon: '🧪', label: t('lesson.types.test.label'), desc: t('lesson.types.test.desc') },
+  { value: 'battle', icon: '⚔️', label: t('lesson.types.battle.label'), desc: t('lesson.types.battle.desc') },
+  { value: 'analysis', icon: '🔍', label: t('lesson.types.analysis.label'), desc: t('lesson.types.analysis.desc') },
+  { value: 'cards', icon: '🎴', label: t('lesson.types.cards.label'), desc: t('lesson.types.cards.desc') },
+  { value: 'retelling', icon: '💬', label: t('lesson.types.retelling.label'), desc: t('lesson.types.retelling.desc') },
+])
 
 async function loadExtraTopics() {
   if (!lesson.value) return
@@ -347,8 +353,8 @@ watch(selectedType, async (type) => {
       const used = new Set<string>()
       for (const a of res.data) {
         if (a.assignment_type === 'analysis') {
-          const t = a.questions_data?.topic || a.settings_data?.topic
-          if (t) used.add(t)
+          const topic = a.questions_data?.topic || a.settings_data?.topic
+          if (topic) used.add(topic)
         }
       }
       usedAnalysisTopics.value = used
@@ -406,7 +412,7 @@ async function handleCreateAssignment() {
       router.push(`/lessons/${lesson.value.id}/assignment/${assignmentId}`)
     }
   } catch (e: any) {
-    createError.value = e.response?.data?.detail || 'Ошибка создания задания'
+    createError.value = translateApiError(e.response?.data?.detail, t('lesson.defaultError'))
   } finally {
     creating.value = false
   }

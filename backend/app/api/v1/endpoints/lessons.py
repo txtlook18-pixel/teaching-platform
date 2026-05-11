@@ -60,7 +60,7 @@ async def extract_text_from_files(
 ):
     """Extract text from uploaded files. Supports TXT, MD, PDF, DOCX. Max 20 MB each."""
     if not files:
-        raise HTTPException(status_code=400, detail="Не выбрано ни одного файла")
+        raise HTTPException(status_code=400, detail="error.no_files")
 
     parts: list[str] = []
     for f in files:
@@ -69,14 +69,14 @@ async def extract_text_from_files(
         if len(raw) > _MAX_FILE_BYTES:
             raise HTTPException(
                 status_code=400,
-                detail=f'"{f.filename}": превышен лимит 20 МБ',
+                detail=f'error.file_too_large:{f.filename}',
             )
 
         ext = os.path.splitext(f.filename or "")[1].lower()
         if ext not in _SUPPORTED_EXT:
             raise HTTPException(
                 status_code=400,
-                detail=f'"{f.filename}": неподдерживаемый формат. Разрешены: TXT, MD, PDF, DOCX',
+                detail=f'error.unsupported_format:{f.filename}',
             )
 
         if ext in (".txt", ".md"):
@@ -88,14 +88,14 @@ async def extract_text_from_files(
                 text = "\n".join(page.get_text() for page in doc)
                 doc.close()
             except Exception as exc:
-                raise HTTPException(status_code=422, detail=f'"{f.filename}": не удалось прочитать PDF — {exc}')
+                raise HTTPException(status_code=422, detail=f'error.pdf_read_error:{f.filename}:{exc}')
         else:  # .docx
             try:
                 from docx import Document
                 doc = Document(io.BytesIO(raw))
                 text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
             except Exception as exc:
-                raise HTTPException(status_code=422, detail=f'"{f.filename}": не удалось прочитать DOCX — {exc}')
+                raise HTTPException(status_code=422, detail=f'error.docx_read_error:{f.filename}:{exc}')
 
         parts.append(text.strip())
 

@@ -118,7 +118,7 @@
             <button
               v-else
               class="px-10 py-3 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 active:scale-95 transition-all"
-              @click="phase = 'finished'"
+              @click="router.push(`/lessons/${lessonId}`)"
             >
               Завершить разбор ✓
             </button>
@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { apiClient } from '@/services/api'
 
 interface AnalysisCase {
@@ -143,6 +143,7 @@ interface AnalysisCase {
 }
 
 const route = useRoute()
+const router = useRouter()
 const lessonId = route.params.id as string
 const assignmentId = route.params.assignmentId as string
 

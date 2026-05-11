@@ -3,8 +3,8 @@
     <div>
       <div class="flex justify-between items-center mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">История заданий</h1>
-          <p class="text-gray-500 mt-1">Все задания по всем урокам</p>
+          <h1 class="text-3xl font-bold text-gray-900">{{ t('archive.title') }}</h1>
+          <p class="text-gray-500 mt-1">{{ t('archive.subtitle') }}</p>
         </div>
 
         <!-- Filter -->
@@ -31,9 +31,9 @@
       <!-- Empty -->
       <div v-else-if="filtered.length === 0" class="text-center py-20">
         <span class="text-6xl">📭</span>
-        <h2 class="text-xl font-semibold text-gray-700 mt-4">Нет заданий</h2>
+        <h2 class="text-xl font-semibold text-gray-700 mt-4">{{ t('archive.empty.title') }}</h2>
         <p class="text-gray-500 mt-2">
-          {{ activeFilter === 'all' ? 'Создайте первое задание на странице урока' : 'Нет заданий с таким статусом' }}
+          {{ activeFilter === 'all' ? t('archive.empty.all') : t('archive.empty.filtered') }}
         </p>
       </div>
 
@@ -43,12 +43,12 @@
           <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Тип</th>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Урок</th>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Статус</th>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Студентов</th>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Ответов</th>
-                <th class="text-left px-4 py-3 text-gray-500 font-medium">Дата</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.type') }}</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.lesson') }}</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.status') }}</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.students') }}</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.answers') }}</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">{{ t('archive.table.date') }}</th>
                 <th class="px-4 py-3"></th>
               </tr>
             </thead>
@@ -76,7 +76,7 @@
                 <td class="px-4 py-3 text-gray-600">{{ item.student_count }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ item.response_count }}</td>
                 <td class="px-4 py-3 text-gray-400 whitespace-nowrap">
-                  {{ new Date(item.created_at).toLocaleDateString('ru-RU') }}
+                  {{ new Date(item.created_at).toLocaleDateString(locale) }}
                 </td>
                 <td class="px-4 py-3">
                   <router-link
@@ -84,7 +84,7 @@
                     :to="`/lessons/${item.lesson_id}/assignment/${item.id}`"
                     class="text-blue-600 hover:text-blue-800 text-xs font-medium"
                   >
-                    Открыть →
+                    {{ t('archive.openLink') }}
                   </router-link>
                 </td>
               </tr>
@@ -98,20 +98,23 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { apiClient } from '@/services/api'
 import type { AssignmentHistoryItem, AssignmentType, AssignmentStatus } from '@/types'
+
+const { t, locale } = useI18n()
 
 const loading = ref(true)
 const items = ref<AssignmentHistoryItem[]>([])
 const activeFilter = ref<'all' | AssignmentStatus>('all')
 
-const filters = [
-  { label: 'Все', value: 'all' },
-  { label: 'Активные', value: 'active' },
-  { label: 'Завершённые', value: 'finished' },
-  { label: 'Черновики', value: 'draft' },
-] as const
+const filters = computed(() => [
+  { label: t('archive.filters.all'), value: 'all' },
+  { label: t('archive.filters.active'), value: 'active' },
+  { label: t('archive.filters.finished'), value: 'finished' },
+  { label: t('archive.filters.draft'), value: 'draft' },
+] as const)
 
 const filtered = computed(() =>
   activeFilter.value === 'all'
@@ -119,14 +122,29 @@ const filtered = computed(() =>
     : items.value.filter((i) => i.status === activeFilter.value),
 )
 
-const typeIcon = (t: AssignmentType) =>
-  ({ test: '🧪', battle: '⚔️', analysis: '🔍', cards: '🎴', retelling: '📝' }[t] ?? '📋')
+const typeIcon = (type: AssignmentType) =>
+  ({ test: '🧪', battle: '⚔️', analysis: '🔍', cards: '🎴', retelling: '📝' }[type] ?? '📋')
 
-const typeLabel = (t: AssignmentType) =>
-  ({ test: 'Тест', battle: 'Баттл', analysis: 'Анализ', cards: 'Карточки', retelling: 'Пересказ' }[t] ?? t)
+const typeLabel = (type: AssignmentType) => {
+  const map: Record<string, string> = {
+    test: t('archive.types.test'),
+    battle: t('archive.types.battle'),
+    analysis: t('archive.types.analysis'),
+    cards: t('archive.types.cards'),
+    retelling: t('archive.types.retelling'),
+  }
+  return map[type] ?? type
+}
 
-const statusLabel = (s: AssignmentStatus) =>
-  ({ draft: 'Черновик', active: 'Активно', finished: 'Завершено', archived: 'Архив' }[s] ?? s)
+const statusLabel = (s: AssignmentStatus) => {
+  const map: Record<string, string> = {
+    draft: t('archive.statuses.draft'),
+    active: t('archive.statuses.active'),
+    finished: t('archive.statuses.finished'),
+    archived: t('archive.statuses.archived'),
+  }
+  return map[s] ?? s
+}
 
 const statusClass = (s: AssignmentStatus) => ({
   draft:    'bg-gray-100 text-gray-600',

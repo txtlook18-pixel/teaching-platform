@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <div class="max-w-2xl">
-      <h1 class="text-3xl font-bold text-gray-900 mb-8">Профиль</h1>
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">{{ t('profile.title') }}</h1>
 
       <!-- User card -->
       <div class="card mb-6">
@@ -19,8 +19,9 @@
         </div>
 
         <div class="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-400">
-          Аккаунт создан: {{ authStore.user?.created_at
-            ? new Date(authStore.user.created_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })
+          {{ t('profile.createdAt') }}
+          {{ authStore.user?.created_at
+            ? new Date(authStore.user.created_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
             : '—' }}
         </div>
       </div>
@@ -37,28 +38,28 @@
         <template v-else>
           <div class="card text-center">
             <p class="text-4xl font-bold text-blue-600">{{ stats.total_lessons }}</p>
-            <p class="text-gray-500 mt-1">Уроков создано</p>
+            <p class="text-gray-500 mt-1">{{ t('profile.stats.lessons') }}</p>
           </div>
           <div class="card text-center">
             <p class="text-4xl font-bold text-purple-600">{{ stats.total_assignments }}</p>
-            <p class="text-gray-500 mt-1">Заданий запущено</p>
+            <p class="text-gray-500 mt-1">{{ t('profile.stats.assignments') }}</p>
           </div>
           <div class="card text-center">
             <p class="text-4xl font-bold text-green-600">{{ stats.total_student_sessions }}</p>
-            <p class="text-gray-500 mt-1">Студентов участвовало</p>
+            <p class="text-gray-500 mt-1">{{ t('profile.stats.students') }}</p>
           </div>
           <div class="card text-center">
             <p class="text-4xl font-bold text-amber-500">{{ stats.total_responses }}</p>
-            <p class="text-gray-500 mt-1">Ответов получено</p>
+            <p class="text-gray-500 mt-1">{{ t('profile.stats.answers') }}</p>
           </div>
         </template>
       </div>
 
       <!-- Logout -->
       <div class="card">
-        <h3 class="font-semibold text-gray-700 mb-3">Сессия</h3>
+        <h3 class="font-semibold text-gray-700 mb-3">{{ t('profile.session') }}</h3>
         <button class="btn-danger" @click="handleLogout">
-          Выйти из аккаунта
+          {{ t('profile.logout') }}
         </button>
       </div>
     </div>
@@ -68,11 +69,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { apiClient } from '@/services/api'
 import type { TeacherStats } from '@/types'
 
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
 

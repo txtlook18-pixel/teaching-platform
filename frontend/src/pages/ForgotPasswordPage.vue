@@ -3,14 +3,14 @@
     <div class="card w-full max-w-md">
       <div class="text-center mb-8">
         <span class="text-5xl">🔑</span>
-        <h1 class="text-2xl font-bold mt-3 text-gray-900">Восстановление пароля</h1>
-        <p class="text-gray-500 mt-1">Введите email — мы отправим ссылку для сброса</p>
+        <h1 class="text-2xl font-bold mt-3 text-gray-900">{{ t('forgotPassword.title') }}</h1>
+        <p class="text-gray-500 mt-1">{{ t('forgotPassword.subtitle') }}</p>
       </div>
 
       <template v-if="!sent">
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('forgotPassword.emailLabel') }}</label>
             <input
               v-model="email"
               type="email"
@@ -25,19 +25,21 @@
           </div>
 
           <button type="submit" class="btn-primary w-full py-3 text-base" :disabled="loading">
-            {{ loading ? 'Отправляем...' : 'Отправить ссылку' }}
+            {{ loading ? t('forgotPassword.submitting') : t('forgotPassword.submit') }}
           </button>
         </form>
       </template>
 
       <template v-else>
         <div class="bg-green-50 text-green-700 text-sm p-4 rounded-lg text-center">
-          Если такой email зарегистрирован, на него отправлена ссылка для сброса пароля. Проверьте почту.
+          {{ t('forgotPassword.sentMessage') }}
         </div>
       </template>
 
       <p class="text-center text-sm text-gray-500 mt-6">
-        <router-link to="/login" class="text-blue-600 hover:underline">← Вернуться ко входу</router-link>
+        <router-link to="/login" class="text-blue-600 hover:underline">
+          {{ t('forgotPassword.backToLogin') }}
+        </router-link>
       </p>
     </div>
   </div>
@@ -45,8 +47,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -61,7 +65,7 @@ async function handleSubmit() {
     await authStore.forgotPassword(email.value)
     sent.value = true
   } catch {
-    error.value = 'Произошла ошибка. Попробуйте позже.'
+    error.value = t('forgotPassword.error')
   } finally {
     loading.value = false
   }

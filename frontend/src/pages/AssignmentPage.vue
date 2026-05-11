@@ -9,7 +9,7 @@
       <div class="mb-6 flex justify-between items-center flex-wrap gap-3">
         <div>
           <router-link :to="`/lessons/${route.params.id}`" class="text-blue-600 hover:underline text-sm">
-            ← Назад к уроку
+            {{ t('assignment.backToLesson') }}
           </router-link>
           <h1 class="text-2xl font-bold mt-1 flex items-center gap-3 flex-wrap">
             {{ typeLabel }} — {{ statusLabel }}
@@ -17,7 +17,7 @@
           </h1>
         </div>
         <button v-if="assignment.status === 'active'" class="btn-danger" @click="handleFinish">
-          Завершить
+          {{ t('assignment.finish') }}
         </button>
       </div>
 
@@ -25,16 +25,16 @@
       <div v-if="assignment.status === 'active'" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- QR block -->
         <div class="card text-center">
-          <h2 class="font-semibold text-gray-700 mb-4">QR для студентов</h2>
+          <h2 class="font-semibold text-gray-700 mb-4">{{ t('assignment.qr.title') }}</h2>
           <div v-if="qrDataUrl" class="flex justify-center mb-4">
             <img :src="qrDataUrl" alt="QR Code" class="w-48 h-48 border-4 border-white shadow-md rounded-lg" />
           </div>
-          <p class="text-sm text-gray-500 mb-2">Или ссылка:</p>
+          <p class="text-sm text-gray-500 mb-2">{{ t('assignment.qr.or') }}</p>
           <code class="text-xs bg-gray-100 px-2 py-1 rounded break-all">{{ joinUrl }}</code>
           <p class="text-xs text-amber-600 mt-3">
-            Истекает:
+            {{ t('assignment.qr.expires') }}
             {{ assignment.session_expires_at
-              ? new Date(assignment.session_expires_at).toLocaleTimeString('ru-RU')
+              ? new Date(assignment.session_expires_at).toLocaleTimeString(locale)
               : '—' }}
           </p>
         </div>
@@ -42,13 +42,13 @@
         <!-- Students list -->
         <div class="card flex flex-col">
           <h2 class="font-semibold text-gray-700 mb-4">
-            Студенты
+            {{ t('assignment.students.title') }}
             <span class="ml-1 text-blue-600 font-bold">{{ onlineCount }}</span>
-            онлайн / {{ sessions.length }} зашли
+            {{ t('assignment.students.online') }} / {{ sessions.length }} {{ t('assignment.students.joined') }}
           </h2>
 
           <div v-if="sessions.length === 0" class="text-center py-8 text-gray-400 flex-1">
-            Ждём студентов...
+            {{ t('assignment.students.waiting') }}
           </div>
           <ul v-else class="space-y-2 max-h-52 overflow-y-auto pr-1 flex-1">
             <li v-for="s in sessions" :key="s.id" class="flex items-center gap-2">
@@ -68,32 +68,38 @@
               :disabled="sessions.length === 0"
               @click="handleStart"
             >
-              🚀 Начать тест ({{ sessions.length }} {{ sessions.length === 1 ? 'студент' : sessions.length < 5 ? 'студента' : 'студентов' }})
+              {{ t('assignment.startTest') }}
+              ({{ sessions.length }}
+              {{ sessions.length === 1 ? studentWord1 : sessions.length < 5 ? studentWord2 : studentWord5 }})
             </button>
             <div v-else class="text-center py-2 text-green-600 font-medium text-sm">
-              ✅ Тест запущен — студенты проходят
+              {{ t('assignment.started') }}
             </div>
-            <button class="btn-secondary w-full text-sm" @click="fetchResults">Обновить</button>
+            <button class="btn-secondary w-full text-sm" @click="fetchResults">
+              {{ t('assignment.refresh') }}
+            </button>
           </div>
           <button v-else class="btn-secondary w-full mt-4 text-sm" @click="fetchResults">
-            Обновить
+            {{ t('assignment.refresh') }}
           </button>
         </div>
       </div>
 
       <!-- Responses table -->
       <div v-if="responses.length > 0" class="card">
-        <h2 class="font-semibold text-gray-700 mb-4">Ответы студентов ({{ responses.length }})</h2>
+        <h2 class="font-semibold text-gray-700 mb-4">
+          {{ t('assignment.responses.title') }} ({{ responses.length }})
+        </h2>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b text-gray-400 text-left">
-                <th class="pb-2 pr-3">Студент</th>
-                <th class="pb-2 pr-3">Вопрос</th>
-                <th class="pb-2 pr-3">Сложность</th>
-                <th class="pb-2 pr-3">Ответ</th>
-                <th class="pb-2 pr-3">Итог</th>
-                <th class="pb-2">Время</th>
+                <th class="pb-2 pr-3">{{ t('assignment.responses.student') }}</th>
+                <th class="pb-2 pr-3">{{ t('assignment.responses.question') }}</th>
+                <th class="pb-2 pr-3">{{ t('assignment.responses.difficulty') }}</th>
+                <th class="pb-2 pr-3">{{ t('assignment.responses.answer') }}</th>
+                <th class="pb-2 pr-3">{{ t('assignment.responses.result') }}</th>
+                <th class="pb-2">{{ t('assignment.responses.time') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -119,7 +125,7 @@
                   <span v-else class="text-gray-300">—</span>
                 </td>
                 <td class="py-2 text-gray-400 whitespace-nowrap">
-                  {{ new Date(r.answered_at).toLocaleTimeString('ru-RU') }}
+                  {{ new Date(r.answered_at).toLocaleTimeString(locale) }}
                 </td>
               </tr>
             </tbody>
@@ -129,7 +135,7 @@
 
       <!-- Finished / no results yet -->
       <div v-else-if="assignment.status !== 'active'" class="card text-center py-12 text-gray-400">
-        Ответов пока нет.
+        {{ t('assignment.responses.empty') }}
       </div>
     </div>
   </AppLayout>
@@ -138,6 +144,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LiveBadge from '@/components/common/LiveBadge.vue'
 import { apiClient } from '@/services/api'
@@ -145,6 +152,7 @@ import { useTeacherWS } from '@/services/websocket'
 import type { Assignment, StudentSession, StudentResponse } from '@/types'
 import QRCode from 'qrcode'
 
+const { t, locale } = useI18n()
 const route  = useRoute()
 const router = useRouter()
 
@@ -157,14 +165,11 @@ const responses  = ref<StudentResponse[]>([])
 const qrDataUrl  = ref('')
 const testStarted = ref(false)
 
-// Track which session IDs are currently online (via WS events)
 const onlineIds  = reactive(new Set<string>())
 const onlineCount = ref(0)
 
 let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
-// ── WebSocket (teacher) ───────────────────────────────────────────────────────
-// Called at setup level so Vue lifecycle hooks inside the composable work.
 const { connected: wsConnected, connect: wsConnect, send: wsSend } = useTeacherWS(assignmentId, {
   onStudentJoined(e) {
     onlineIds.add(e.session_id)
@@ -187,8 +192,6 @@ const { connected: wsConnected, connect: wsConnect, send: wsSend } = useTeacherW
   },
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 const joinUrl = computed(() =>
   assignment.value?.session_token
     ? `${window.location.origin}/join?token=${assignment.value.session_token}`
@@ -200,17 +203,28 @@ const isPhoneMode = computed(() =>
   assignment.value?.settings_data?.mode === 'individual'
 )
 
+// Russian pluralization helper for student count button
+const studentWord1 = computed(() => locale.value === 'ru' ? 'студент' : locale.value === 'uz' ? 'o\'quvchi' : 'student')
+const studentWord2 = computed(() => locale.value === 'ru' ? 'студента' : locale.value === 'uz' ? 'o\'quvchi' : 'students')
+const studentWord5 = computed(() => locale.value === 'ru' ? 'студентов' : locale.value === 'uz' ? 'o\'quvchi' : 'students')
+
 const typeLabel = computed(() => {
   const map: Record<string, string> = {
-    test: '🧪 Тест', battle: '⚔️ Баттл', analysis: '🔍 Анализ',
-    cards: '🎴 Карточки', retelling: '📝 Пересказ',
+    test: t('assignment.types.test'),
+    battle: t('assignment.types.battle'),
+    analysis: t('assignment.types.analysis'),
+    cards: t('assignment.types.cards'),
+    retelling: t('assignment.types.retelling'),
   }
   return map[assignment.value?.assignment_type ?? ''] ?? ''
 })
 
 const statusLabel = computed(() => {
   const map: Record<string, string> = {
-    draft: 'Черновик', active: 'Активно', finished: 'Завершено', archived: 'Архив',
+    draft: t('assignment.statuses.draft'),
+    active: t('assignment.statuses.active'),
+    finished: t('assignment.statuses.finished'),
+    archived: t('assignment.statuses.archived'),
   }
   return map[assignment.value?.status ?? ''] ?? ''
 })
@@ -227,13 +241,10 @@ function formatAnswer(data: any): string {
   return JSON.stringify(data)
 }
 
-// ── Data fetching ─────────────────────────────────────────────────────────────
-
 async function fetchResults() {
   const res = await apiClient.get(`/assignments/${assignmentId}/results`)
   sessions.value  = res.data.sessions
   responses.value = res.data.responses
-  // Sync online count with actual session list on manual refresh
   onlineCount.value = Math.max(onlineCount.value, sessions.value.length)
 }
 
@@ -248,14 +259,11 @@ function handleStart() {
 }
 
 async function handleFinish() {
-  if (!confirm('Завершить задание для всех студентов?')) return
+  if (!confirm(t('assignment.finishConfirm'))) return
   await apiClient.post(`/assignments/${assignmentId}/finish`)
   if (assignment.value) assignment.value.status = 'finished'
-  // Also signal via WS so students who are still connected get the event immediately
   wsSend({ action: 'finish' })
 }
-
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
   try {
