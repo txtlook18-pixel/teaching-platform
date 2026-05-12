@@ -4,7 +4,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <router-link to="/dashboard" class="flex items-center gap-2">
-            <span class="text-2xl">🎓</span>
+            <img src="/logo.svg" alt="logo" class="h-8 w-8" />
             <span class="text-xl font-bold text-blue-600">{{ t('app.logo') }}</span>
           </router-link>
 

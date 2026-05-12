@@ -127,6 +127,19 @@ export default {
     createAndLaunch: 'Yaratish va ishga tushirish',
     creating: 'Yaratilmoqda...',
     defaultError: 'Topshiriq yaratishda xato',
+    backToLessons: '← Darslar ro\'yxatiga',
+    noAnalysis: 'Tahlil hali boshlanmagan',
+    tabs: {
+      materials: 'Materiallar',
+      assignment: 'Topshiriq',
+      test: 'Test',
+      chat: 'AIdan so\'rash',
+    },
+    sidebar: {
+      title: 'Materiallar',
+      search: 'Materiallarni qidirish',
+      noMaterials: 'Materiallar yo\'q',
+    },
   },
 
   archive: {

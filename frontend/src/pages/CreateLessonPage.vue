@@ -421,11 +421,17 @@ async function handleCreate() {
     }
 
     loadingStage.value = 'create'
+    const sourcesMetadata = sources.value.map((s) => {
+      if (s.type === 'file') return { name: s.file.name, type: 'file' as const, size: s.file.size }
+      if (s.type === 'url')  return { name: s.url,      type: 'url'  as const }
+      return { name: `Текст ${textNoteIndex(sources.value.indexOf(s))}`, type: 'text' as const }
+    })
     const lesson = await lessonStore.createLesson({
-      title:          form.value.title,
-      language:       form.value.language,
-      source_type:    sourceType,
-      source_content: sourceContent,
+      title:            form.value.title,
+      language:         form.value.language,
+      source_type:      sourceType,
+      source_content:   sourceContent,
+      sources_metadata: sourcesMetadata,
     })
 
     if (sourceType === 'url') {

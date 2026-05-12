@@ -127,6 +127,19 @@ export default {
     createAndLaunch: 'Создать и запустить',
     creating: 'Создаём...',
     defaultError: 'Ошибка создания задания',
+    backToLessons: '← К списку уроков',
+    noAnalysis: 'Анализ ещё не запущен',
+    tabs: {
+      materials: 'Материалы',
+      assignment: 'Задание',
+      test: 'Тест',
+      chat: 'Спросить у ИИ',
+    },
+    sidebar: {
+      title: 'Материалы',
+      search: 'Поиск в материалах',
+      noMaterials: 'Нет материалов',
+    },
   },
 
   archive: {

@@ -127,6 +127,19 @@ export default {
     createAndLaunch: 'Create & Launch',
     creating: 'Creating...',
     defaultError: 'Error creating assignment',
+    backToLessons: '← Back to lessons',
+    noAnalysis: 'Analysis not yet started',
+    tabs: {
+      materials: 'Materials',
+      assignment: 'Assignment',
+      test: 'Test',
+      chat: 'Ask AI',
+    },
+    sidebar: {
+      title: 'Materials',
+      search: 'Search materials',
+      noMaterials: 'No materials',
+    },
   },
 
   archive: {

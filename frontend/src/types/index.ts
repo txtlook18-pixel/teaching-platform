@@ -6,6 +6,12 @@ export interface User {
   created_at: string
 }
 
+export interface SourceMeta {
+  name: string
+  type: 'file' | 'url' | 'text'
+  size?: number
+}
+
 export interface Lesson {
   id: string
   teacher_id: string
@@ -14,6 +20,7 @@ export interface Lesson {
   source_type: 'url' | 'file' | 'text'
   source_content?: string
   cluster_data?: ClusterData
+  sources_metadata?: SourceMeta[]
   created_at: string
   updated_at: string
 }

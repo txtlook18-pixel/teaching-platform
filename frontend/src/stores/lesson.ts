@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '@/services/api'
-import type { Lesson } from '@/types'
+import type { Lesson, SourceMeta } from '@/types'
 
 export const useLessonStore = defineStore('lesson', () => {
   const lessons = ref<Lesson[]>([])
@@ -34,6 +34,7 @@ export const useLessonStore = defineStore('lesson', () => {
     language: string
     source_type: string
     source_content: string
+    sources_metadata?: SourceMeta[]
   }) {
     const res = await apiClient.post<Lesson>('/lessons/', data)
     lessons.value.unshift(res.data)

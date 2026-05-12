@@ -5,267 +5,331 @@
     </div>
 
     <div v-else-if="lesson">
-      <div class="mb-8">
-        <div class="flex justify-between items-start">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">{{ lesson.title }}</h1>
-            <p v-if="lesson.cluster_data" class="text-gray-500 mt-1">
-              {{ lesson.cluster_data.main_topic }}
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-              {{ lesson.language.toUpperCase() }}
-            </span>
-            <router-link
-              to="/dashboard"
-              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-            >
-              {{ t('lesson.finishLesson') }}
-            </router-link>
-          </div>
-        </div>
-      </div>
+      <!-- Back -->
+      <router-link
+        to="/dashboard"
+        class="inline-flex items-center text-sm text-gray-500 hover:text-blue-600 transition-colors mb-4"
+      >
+        {{ t('lesson.backToLessons') }}
+      </router-link>
 
-      <!-- Cluster info -->
-      <div v-if="lesson.cluster_data" class="card mb-8">
-        <h2 class="font-semibold text-gray-700 mb-3">{{ t('lesson.analysis.title') }}</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p class="text-xs text-gray-400">{{ t('lesson.analysis.subtopics') }}</p>
-            <div class="flex flex-wrap gap-1 mt-1">
-              <span
-                v-for="sub in lesson.cluster_data.subtopics"
-                :key="sub"
-                class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded"
-              >{{ sub }}</span>
-            </div>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400">{{ t('lesson.analysis.concepts') }}</p>
-            <div class="flex flex-wrap gap-1 mt-1">
-              <span
-                v-for="k in lesson.cluster_data.key_concepts"
-                :key="k"
-                class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded"
-              >{{ k }}</span>
-            </div>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400">{{ t('lesson.analysis.difficulty') }}</p>
-            <p class="font-medium capitalize mt-1">{{ lesson.cluster_data.difficulty_estimate }}</p>
-          </div>
-          <router-link :to="`/lessons/${lesson.id}/questions`" class="block hover:opacity-70 transition-opacity cursor-pointer">
-            <p class="text-xs text-gray-400">{{ t('lesson.analysis.suggestedCount') }}</p>
-            <p class="font-medium mt-1 text-blue-600">{{ lesson.cluster_data.suggested_question_count }}</p>
+      <!-- Header -->
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">{{ lesson.title }}</h1>
+          <p v-if="lesson.cluster_data" class="text-gray-500 mt-1">
+            {{ lesson.cluster_data.main_topic }}
+          </p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0 ml-4">
+          <span class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+            {{ lesson.language.toUpperCase() }}
+          </span>
+          <router-link
+            to="/dashboard"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ t('lesson.finishLesson') }}
           </router-link>
         </div>
       </div>
 
-      <!-- Create assignment -->
-      <div class="card">
-        <h2 class="font-semibold text-gray-800 mb-4 text-lg">{{ t('lesson.createAssignment') }}</h2>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <button
-            v-for="atype in assignmentTypes"
-            :key="atype.value"
-            class="border-2 rounded-xl p-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50"
-            :class="selectedType === atype.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
-            @click="selectedType = atype.value"
-          >
-            <span class="text-3xl">{{ atype.icon }}</span>
-            <p class="text-sm font-medium mt-2">{{ atype.label }}</p>
-            <p class="text-xs text-gray-400 mt-1">{{ atype.desc }}</p>
-          </button>
-        </div>
+      <!-- Two-column layout -->
+      <div class="flex gap-6 items-start">
 
-        <!-- Q&A mode -->
-        <div v-if="selectedType === 'retelling'" class="mt-6">
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-            <p class="text-sm font-medium text-gray-600 mb-3">{{ t('lesson.retelling.topics') }}</p>
-            <ul v-if="lesson?.cluster_data?.subtopics?.length" class="space-y-2">
-              <li
-                v-for="(sub, i) in lesson.cluster_data.subtopics"
-                :key="i"
-                class="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium flex-shrink-0">{{ i + 1 }}</span>
-                {{ sub }}
-              </li>
-            </ul>
-            <p v-else class="text-sm text-gray-400">{{ t('lesson.retelling.noTopics') }}</p>
-          </div>
-          <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
+        <!-- Left: tabs + content -->
+        <div class="flex-1 min-w-0">
 
-        <!-- Test mode -->
-        <div v-else-if="selectedType === 'test'" class="mt-6 space-y-5">
-          <div class="flex gap-4 items-end flex-wrap">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.questionCount') }}</label>
-              <input v-model.number="questionCount" type="number" min="3" max="20" class="input-field w-24" />
-            </div>
-            <div v-if="testMode === 'group'">
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.timer') }}</label>
-              <select v-model.number="timerSeconds" class="input-field w-28">
-                <option :value="30">{{ t('lesson.test.t30') }}</option>
-                <option :value="60">{{ t('lesson.test.t60') }}</option>
-                <option :value="90">{{ t('lesson.test.t90') }}</option>
-                <option :value="120">{{ t('lesson.test.t120') }}</option>
-                <option :value="0">{{ t('lesson.test.noTimer') }}</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.test.mode') }}</label>
-            <div class="grid grid-cols-2 gap-3 max-w-md">
+          <!-- Tab navigation -->
+          <div class="border-b border-gray-200 mb-6">
+            <nav class="flex">
               <button
-                type="button"
-                class="border-2 rounded-xl p-4 text-left transition-all"
-                :class="testMode === 'group' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
-                @click="testMode = 'group'"
+                v-for="tab in tabs"
+                :key="tab.key"
+                class="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap"
+                :class="activeTab === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                @click="switchTab(tab.key)"
               >
-                <span class="text-2xl">🖥️</span>
-                <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.screen') }}</p>
-                <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.screenDesc') }}</p>
+                {{ tab.icon }} {{ tab.label }}
               </button>
-              <button
-                type="button"
-                class="border-2 rounded-xl p-4 text-left transition-all"
-                :class="testMode === 'individual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
-                @click="testMode = 'individual'"
-              >
-                <span class="text-2xl">📱</span>
-                <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.phone') }}</p>
-                <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.phoneDesc') }}</p>
-              </button>
+            </nav>
+          </div>
+
+          <!-- Tab: Материалы -->
+          <div v-if="activeTab === 'materials'">
+            <div v-if="lesson.cluster_data" class="card">
+              <h2 class="font-semibold text-gray-700 mb-4">{{ t('lesson.analysis.title') }}</h2>
+              <div class="grid grid-cols-2 gap-6">
+                <div>
+                  <p class="text-xs text-gray-400 mb-2">{{ t('lesson.analysis.subtopics') }}</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      v-for="sub in lesson.cluster_data.subtopics"
+                      :key="sub"
+                      class="text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full"
+                    >{{ sub }}</span>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-2">{{ t('lesson.analysis.concepts') }}</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      v-for="k in lesson.cluster_data.key_concepts"
+                      :key="k"
+                      class="text-xs bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full"
+                    >{{ k }}</span>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-1">{{ t('lesson.analysis.difficulty') }}</p>
+                  <p class="font-medium capitalize mt-1">{{ lesson.cluster_data.difficulty_estimate }}</p>
+                </div>
+                <router-link
+                  :to="`/lessons/${lesson.id}/questions`"
+                  class="block hover:opacity-70 transition-opacity cursor-pointer"
+                >
+                  <p class="text-xs text-gray-400 mb-1">{{ t('lesson.analysis.suggestedCount') }}</p>
+                  <p class="font-medium mt-1 text-blue-600">{{ lesson.cluster_data.suggested_question_count }}</p>
+                </router-link>
+              </div>
+            </div>
+            <div v-else class="card text-center py-12">
+              <p class="text-gray-400 text-sm">{{ t('lesson.noAnalysis') }}</p>
             </div>
           </div>
 
-          <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
+          <!-- Tab: Задание (battle, analysis, cards) -->
+          <div v-else-if="activeTab === 'assignment'" class="card">
+            <h2 class="font-semibold text-gray-800 mb-4 text-lg">{{ t('lesson.createAssignment') }}</h2>
+            <div class="grid grid-cols-3 gap-3 mb-6">
+              <button
+                v-for="atype in assignmentTypeOptions"
+                :key="atype.value"
+                class="border-2 rounded-xl p-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50"
+                :class="selectedType === atype.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200'"
+                @click="selectedType = atype.value"
+              >
+                <span class="text-3xl">{{ atype.icon }}</span>
+                <p class="text-sm font-medium mt-2">{{ atype.label }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ atype.desc }}</p>
+              </button>
+            </div>
 
-        <!-- Cards mode -->
-        <div v-else-if="selectedType === 'cards'" class="mt-6 flex gap-4 items-end">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.cards.countLabel') }}</label>
-            <input v-model.number="questionCount" type="number" min="3" max="30" class="input-field w-24" />
+            <!-- Cards form -->
+            <div v-if="selectedType === 'cards'" class="flex gap-4 items-end">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.cards.countLabel') }}</label>
+                <input v-model.number="questionCount" type="number" min="3" max="30" class="input-field w-24" />
+              </div>
+              <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
+                {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
+              </button>
+            </div>
+
+            <!-- Analysis form -->
+            <div v-else-if="selectedType === 'analysis'">
+              <div v-if="allTopicsUsed && !extraTopics.length" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
+                <p class="text-sm text-amber-800 font-medium mb-3">{{ t('lesson.analysisMode.allUsed') }}</p>
+                <button
+                  class="px-5 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium transition-colors disabled:opacity-60"
+                  :disabled="loadingExtraTopics"
+                  @click="loadExtraTopics"
+                >
+                  <span v-if="loadingExtraTopics" class="inline-flex items-center gap-2">
+                    <span class="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block"></span>
+                    {{ t('lesson.analysisMode.generating') }}
+                  </span>
+                  <span v-else>{{ t('lesson.analysisMode.getNew') }}</span>
+                </button>
+              </div>
+              <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                <p class="text-sm font-medium text-gray-600 mb-3">
+                  {{ extraTopics.length ? t('lesson.analysisMode.newTopics') : t('lesson.analysisMode.selectTopic') }}
+                </p>
+                <div v-if="availableAnalysisTopics.length" class="space-y-2">
+                  <button
+                    v-for="(sub, i) in availableAnalysisTopics"
+                    :key="sub"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
+                    :class="!extraTopics.length && usedAnalysisTopics.has(sub)
+                      ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                      : selectedAnalysisTopic === sub
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
+                    :disabled="!extraTopics.length && usedAnalysisTopics.has(sub)"
+                    @click="(!extraTopics.length && usedAnalysisTopics.has(sub)) || (selectedAnalysisTopic = sub)"
+                  >
+                    <span
+                      class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors"
+                      :class="!extraTopics.length && usedAnalysisTopics.has(sub)
+                        ? 'bg-gray-200 text-gray-400'
+                        : selectedAnalysisTopic === sub ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                    >{{ i + 1 }}</span>
+                    <span class="text-sm" :class="!extraTopics.length && usedAnalysisTopics.has(sub) ? 'text-gray-400 line-through' : 'text-gray-800'">{{ sub }}</span>
+                    <span v-if="!extraTopics.length && usedAnalysisTopics.has(sub)" class="ml-auto text-xs text-gray-400">{{ t('lesson.analysisMode.used') }}</span>
+                    <span v-else-if="selectedAnalysisTopic === sub" class="ml-auto text-blue-500 text-base">✓</span>
+                  </button>
+                </div>
+                <p v-else class="text-sm text-gray-400">{{ t('lesson.analysisMode.noTopics') }}</p>
+              </div>
+              <button
+                class="btn-primary px-8 py-2"
+                :disabled="creating || !selectedAnalysisTopic"
+                @click="handleCreateAssignment"
+              >
+                {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
+              </button>
+            </div>
+
+            <!-- Battle form -->
+            <div v-else-if="selectedType === 'battle'" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.battle.timerLabel') }}</label>
+                <div class="flex gap-2 flex-wrap">
+                  <button
+                    v-for="opt in battleTimerOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="px-5 py-2 rounded-lg border-2 text-sm font-medium transition-all"
+                    :class="battleTimer === opt.value
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-blue-300 text-gray-700'"
+                    @click="battleTimer = opt.value"
+                  >{{ opt.label }}</button>
+                </div>
+              </div>
+              <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
+                {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
+              </button>
+            </div>
+
+            <div v-if="createError" class="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">{{ createError }}</div>
           </div>
-          <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
 
-        <!-- Analysis mode -->
-        <div v-else-if="selectedType === 'analysis'" class="mt-6">
-          <div v-if="allTopicsUsed && !extraTopics.length" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
-            <p class="text-sm text-amber-800 font-medium mb-3">{{ t('lesson.analysisMode.allUsed') }}</p>
-            <button
-              class="px-5 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium transition-colors disabled:opacity-60"
-              :disabled="loadingExtraTopics"
-              @click="loadExtraTopics"
-            >
-              <span v-if="loadingExtraTopics" class="inline-flex items-center gap-2">
-                <span class="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block"></span>
-                {{ t('lesson.analysisMode.generating') }}
-              </span>
-              <span v-else>{{ t('lesson.analysisMode.getNew') }}</span>
+          <!-- Tab: Тест -->
+          <div v-else-if="activeTab === 'test'" class="card">
+            <h2 class="font-semibold text-gray-800 mb-4 text-lg">{{ t('lesson.createAssignment') }}</h2>
+            <div class="space-y-5">
+              <div class="flex gap-4 items-end flex-wrap">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.questionCount') }}</label>
+                  <input v-model.number="questionCount" type="number" min="3" max="20" class="input-field w-24" />
+                </div>
+                <div v-if="testMode === 'group'">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.timer') }}</label>
+                  <select v-model.number="timerSeconds" class="input-field w-28">
+                    <option :value="30">{{ t('lesson.test.t30') }}</option>
+                    <option :value="60">{{ t('lesson.test.t60') }}</option>
+                    <option :value="90">{{ t('lesson.test.t90') }}</option>
+                    <option :value="120">{{ t('lesson.test.t120') }}</option>
+                    <option :value="0">{{ t('lesson.test.noTimer') }}</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.test.mode') }}</label>
+                <div class="grid grid-cols-2 gap-3 max-w-md">
+                  <button
+                    type="button"
+                    class="border-2 rounded-xl p-4 text-left transition-all"
+                    :class="testMode === 'group' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
+                    @click="testMode = 'group'"
+                  >
+                    <span class="text-2xl">🖥️</span>
+                    <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.screen') }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.screenDesc') }}</p>
+                  </button>
+                  <button
+                    type="button"
+                    class="border-2 rounded-xl p-4 text-left transition-all"
+                    :class="testMode === 'individual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
+                    @click="testMode = 'individual'"
+                  >
+                    <span class="text-2xl">📱</span>
+                    <p class="font-medium text-sm mt-2 text-gray-900">{{ t('lesson.test.phone') }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ t('lesson.test.phoneDesc') }}</p>
+                  </button>
+                </div>
+              </div>
+              <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
+                {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
+              </button>
+            </div>
+            <div v-if="createError" class="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">{{ createError }}</div>
+          </div>
+
+          <!-- Tab: Спросить у ИИ -->
+          <div v-else-if="activeTab === 'chat'" class="card">
+            <h2 class="font-semibold text-gray-800 mb-4 text-lg">{{ t('lesson.createAssignment') }}</h2>
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+              <p class="text-sm font-medium text-gray-600 mb-3">{{ t('lesson.retelling.topics') }}</p>
+              <ul v-if="lesson?.cluster_data?.subtopics?.length" class="space-y-2">
+                <li
+                  v-for="(sub, i) in lesson.cluster_data.subtopics"
+                  :key="i"
+                  class="flex items-center gap-2 text-sm text-gray-700"
+                >
+                  <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium flex-shrink-0">{{ i + 1 }}</span>
+                  {{ sub }}
+                </li>
+              </ul>
+              <p v-else class="text-sm text-gray-400">{{ t('lesson.retelling.noTopics') }}</p>
+            </div>
+            <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
+              {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
             </button>
+            <div v-if="createError" class="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">{{ createError }}</div>
           </div>
 
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-            <p class="text-sm font-medium text-gray-600 mb-3">
-              {{ extraTopics.length ? t('lesson.analysisMode.newTopics') : t('lesson.analysisMode.selectTopic') }}
-            </p>
-            <div v-if="availableAnalysisTopics.length" class="space-y-2">
-              <button
-                v-for="(sub, i) in availableAnalysisTopics"
-                :key="sub"
-                type="button"
-                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all"
-                :class="!extraTopics.length && usedAnalysisTopics.has(sub)
-                  ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                  : selectedAnalysisTopic === sub
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'"
-                :disabled="!extraTopics.length && usedAnalysisTopics.has(sub)"
-                @click="(!extraTopics.length && usedAnalysisTopics.has(sub)) || (selectedAnalysisTopic = sub)"
+        </div>
+
+        <!-- Right sidebar (always visible) -->
+        <aside class="w-72 shrink-0 sticky top-24">
+          <div class="card">
+            <h2 class="font-semibold text-gray-800 mb-3">{{ t('lesson.sidebar.title') }}</h2>
+            <div class="relative mb-3">
+              <svg
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
               >
-                <span
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors"
-                  :class="!extraTopics.length && usedAnalysisTopics.has(sub)
-                    ? 'bg-gray-200 text-gray-400'
-                    : selectedAnalysisTopic === sub
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-600'"
-                >{{ i + 1 }}</span>
-                <span class="text-sm" :class="!extraTopics.length && usedAnalysisTopics.has(sub) ? 'text-gray-400 line-through' : 'text-gray-800'">{{ sub }}</span>
-                <span v-if="!extraTopics.length && usedAnalysisTopics.has(sub)" class="ml-auto text-xs text-gray-400">
-                  {{ t('lesson.analysisMode.used') }}
-                </span>
-                <span v-else-if="selectedAnalysisTopic === sub" class="ml-auto text-blue-500 text-base">✓</span>
-              </button>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
+              </svg>
+              <input
+                v-model="sidebarSearch"
+                type="text"
+                :placeholder="t('lesson.sidebar.search')"
+                class="input-field pl-9 text-sm"
+              />
             </div>
-            <p v-else class="text-sm text-gray-400">{{ t('lesson.analysisMode.noTopics') }}</p>
-          </div>
-          <button
-            class="btn-primary px-8 py-2"
-            :disabled="creating || !selectedAnalysisTopic"
-            @click="handleCreateAssignment"
-          >
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
-
-        <!-- Battle mode -->
-        <div v-else-if="selectedType === 'battle'" class="mt-6 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">{{ t('lesson.battle.timerLabel') }}</label>
-            <div class="flex gap-2 flex-wrap">
-              <button
-                v-for="opt in battleTimerOptions"
-                :key="opt.value"
-                type="button"
-                class="px-5 py-2 rounded-lg border-2 text-sm font-medium transition-all"
-                :class="battleTimer === opt.value
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-blue-300 text-gray-700'"
-                @click="battleTimer = opt.value"
-              >{{ opt.label }}</button>
+            <div class="space-y-0.5 max-h-[480px] overflow-y-auto">
+              <label
+                v-for="src in filteredSources"
+                :key="src.name"
+                class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors cursor-default"
+              >
+                <span class="text-base shrink-0">{{ sourceIcon(src) }}</span>
+                <span class="flex-1 truncate text-sm text-gray-700" :title="src.name">{{ src.name }}</span>
+                <input
+                  type="checkbox"
+                  checked
+                  class="w-4 h-4 rounded accent-blue-500 shrink-0 cursor-default"
+                  @click.prevent
+                />
+              </label>
+              <p v-if="!filteredSources.length" class="text-sm text-gray-400 text-center py-6">
+                {{ t('lesson.sidebar.noMaterials') }}
+              </p>
             </div>
           </div>
-          <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
+        </aside>
 
-        <!-- Standard mode -->
-        <div v-else-if="selectedType" class="mt-6 flex gap-4 items-end">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.questionCount') }}</label>
-            <input v-model.number="questionCount" type="number" min="3" max="20" class="input-field w-24" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lesson.test.timer') }}</label>
-            <select v-model.number="timerSeconds" class="input-field w-28">
-              <option :value="30">{{ t('lesson.test.t30') }}</option>
-              <option :value="60">{{ t('lesson.test.t60') }}</option>
-              <option :value="90">{{ t('lesson.test.t90') }}</option>
-              <option :value="120">{{ t('lesson.test.t120') }}</option>
-              <option :value="0">{{ t('lesson.test.noTimer') }}</option>
-            </select>
-          </div>
-          <button class="btn-primary px-8 py-2" :disabled="creating" @click="handleCreateAssignment">
-            {{ creating ? t('lesson.creating') : t('lesson.createAndLaunch') }}
-          </button>
-        </div>
-
-        <div v-if="createError" class="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">{{ createError }}</div>
       </div>
     </div>
   </AppLayout>
@@ -279,7 +343,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { useLessonStore } from '@/stores/lesson'
 import { apiClient } from '@/services/api'
 import { translateApiError } from '@/i18n'
-import type { Lesson } from '@/types'
+import type { Lesson, SourceMeta } from '@/types'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -288,6 +352,11 @@ const lessonStore = useLessonStore()
 
 const loading = ref(true)
 const lesson = ref<Lesson | null>(null)
+
+type TabKey = 'materials' | 'assignment' | 'test' | 'chat'
+const activeTab = ref<TabKey>('materials')
+const sidebarSearch = ref('')
+
 const selectedType = ref('')
 const questionCount = ref(10)
 const timerSeconds = ref(60)
@@ -296,6 +365,29 @@ const selectedAnalysisTopic = ref('')
 const usedAnalysisTopics = ref<Set<string>>(new Set())
 const extraTopics = ref<string[]>([])
 const loadingExtraTopics = ref(false)
+const battleTimer = ref(300)
+const creating = ref(false)
+const createError = ref('')
+
+const tabs = computed(() => [
+  { key: 'materials' as TabKey, icon: '📋', label: t('lesson.tabs.materials') },
+  { key: 'assignment' as TabKey, icon: '📝', label: t('lesson.tabs.assignment') },
+  { key: 'test'       as TabKey, icon: '🎯', label: t('lesson.tabs.test') },
+  { key: 'chat'       as TabKey, icon: '💬', label: t('lesson.tabs.chat') },
+])
+
+const assignmentTypeOptions = computed(() => [
+  { value: 'battle',   icon: '⚔️', label: t('lesson.types.battle.label'),   desc: t('lesson.types.battle.desc') },
+  { value: 'analysis', icon: '🔍', label: t('lesson.types.analysis.label'), desc: t('lesson.types.analysis.desc') },
+  { value: 'cards',    icon: '🎴', label: t('lesson.types.cards.label'),    desc: t('lesson.types.cards.desc') },
+])
+
+const battleTimerOptions = computed(() => [
+  { value: 180, label: t('lesson.battle.m3') },
+  { value: 300, label: t('lesson.battle.m5') },
+  { value: 420, label: t('lesson.battle.m7') },
+  { value: 600, label: t('lesson.battle.m10') },
+])
 
 const availableAnalysisTopics = computed<string[]>(() => {
   if (extraTopics.value.length) return extraTopics.value
@@ -304,43 +396,36 @@ const availableAnalysisTopics = computed<string[]>(() => {
 
 const allTopicsUsed = computed(() => {
   const topics = lesson.value?.cluster_data?.subtopics ?? []
-  return topics.length > 0 && topics.every(t => usedAnalysisTopics.value.has(t))
+  return topics.length > 0 && topics.every(s => usedAnalysisTopics.value.has(s))
 })
 
-const battleTimer = ref(300)
-const battleTimerOptions = computed(() => [
-  { value: 180, label: t('lesson.battle.m3') },
-  { value: 300, label: t('lesson.battle.m5') },
-  { value: 420, label: t('lesson.battle.m7') },
-  { value: 600, label: t('lesson.battle.m10') },
-])
+const filteredSources = computed<SourceMeta[]>(() => {
+  const sources = lesson.value?.sources_metadata ?? []
+  if (!sidebarSearch.value.trim()) return sources
+  const q = sidebarSearch.value.toLowerCase()
+  return sources.filter(s => s.name.toLowerCase().includes(q))
+})
 
-const creating = ref(false)
-const createError = ref('')
+function sourceIcon(src: SourceMeta): string {
+  if (src.type === 'url')  return '🔗'
+  if (src.type === 'text') return '📝'
+  const ext = src.name.split('.').pop()?.toLowerCase()
+  const map: Record<string, string> = {
+    pdf: '📕', docx: '📘', doc: '📘', md: '📋', txt: '📄',
+    pptx: '📊', ppt: '📊', xlsx: '📗', xls: '📗',
+  }
+  return map[ext ?? ''] ?? '📄'
+}
 
-const assignmentTypes = computed(() => [
-  { value: 'test', icon: '🧪', label: t('lesson.types.test.label'), desc: t('lesson.types.test.desc') },
-  { value: 'battle', icon: '⚔️', label: t('lesson.types.battle.label'), desc: t('lesson.types.battle.desc') },
-  { value: 'analysis', icon: '🔍', label: t('lesson.types.analysis.label'), desc: t('lesson.types.analysis.desc') },
-  { value: 'cards', icon: '🎴', label: t('lesson.types.cards.label'), desc: t('lesson.types.cards.desc') },
-  { value: 'retelling', icon: '💬', label: t('lesson.types.retelling.label'), desc: t('lesson.types.retelling.desc') },
-])
-
-async function loadExtraTopics() {
-  if (!lesson.value) return
-  loadingExtraTopics.value = true
-  selectedAnalysisTopic.value = ''
-  try {
-    const allUsed = [...usedAnalysisTopics.value]
-    const res = await apiClient.post(`/lessons/${lesson.value.id}/topics/more`, {
-      exclude: allUsed,
-      count: 5,
-    })
-    extraTopics.value = res.data.topics
-  } catch {
-    extraTopics.value = []
-  } finally {
-    loadingExtraTopics.value = false
+function switchTab(tab: TabKey) {
+  activeTab.value = tab
+  createError.value = ''
+  if (tab === 'test') {
+    selectedType.value = 'test'
+  } else if (tab === 'chat') {
+    selectedType.value = 'retelling'
+  } else {
+    selectedType.value = ''
   }
 }
 
@@ -372,19 +457,37 @@ onMounted(async () => {
   }
 })
 
+async function loadExtraTopics() {
+  if (!lesson.value) return
+  loadingExtraTopics.value = true
+  selectedAnalysisTopic.value = ''
+  try {
+    const allUsed = [...usedAnalysisTopics.value]
+    const res = await apiClient.post(`/lessons/${lesson.value.id}/topics/more`, {
+      exclude: allUsed,
+      count: 5,
+    })
+    extraTopics.value = res.data.topics
+  } catch {
+    extraTopics.value = []
+  } finally {
+    loadingExtraTopics.value = false
+  }
+}
+
 async function handleCreateAssignment() {
   if (!selectedType.value || !lesson.value) return
   creating.value = true
   createError.value = ''
   try {
     const isRetelling = selectedType.value === 'retelling'
-    const isCards = selectedType.value === 'cards'
-    const isTest = selectedType.value === 'test'
+    const isCards    = selectedType.value === 'cards'
+    const isTest     = selectedType.value === 'test'
     const isAnalysis = selectedType.value === 'analysis'
-    const isBattle = selectedType.value === 'battle'
+    const isBattle   = selectedType.value === 'battle'
     const res = await apiClient.post(`/assignments/lessons/${lesson.value.id}/assignments`, {
       assignment_type: selectedType.value,
-      question_count: isRetelling ? 1 : isAnalysis ? 1 : isBattle ? 1 : questionCount.value,
+      question_count: isRetelling || isAnalysis || isBattle ? 1 : questionCount.value,
       timer_seconds: isBattle
         ? battleTimer.value
         : (isRetelling || isCards || isAnalysis || (isTest && testMode.value === 'individual')) ? 0 : timerSeconds.value,
