@@ -25,6 +25,7 @@ class Lesson(Base):
     )
     source_content = Column(Text, nullable=True)
     cluster_data = Column(JSON, nullable=True)
+    sources_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

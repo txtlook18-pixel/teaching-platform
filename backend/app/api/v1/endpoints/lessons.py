@@ -36,6 +36,7 @@ async def create_lesson(
         language=lesson_data.language,
         source_type=lesson_data.source_type,
         source_content=lesson_data.source_content,
+        sources_metadata=[s.model_dump() for s in lesson_data.sources_metadata] if lesson_data.sources_metadata else None,
     )
     db.add(lesson)
     await db.commit()
