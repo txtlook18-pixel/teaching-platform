@@ -60,6 +60,7 @@ export default {
     dropzoneText: 'Bosing yoki fayllarni bu yerga sudrab keling',
     dropzoneHint: 'TXT, MD, PDF, DOCX · har biri 20 MB gacha',
     oversize: '20 MB dan oshib ketdi',
+    langUnsupported: 'Qo\'llab-quvvatlanmaydi',
     submit: 'Dars yaratish',
     submitting: {
       extract: 'Matn ajratilmoqda...',
@@ -129,6 +130,14 @@ export default {
     defaultError: 'Topshiriq yaratishda xato',
     backToLessons: '← Darslar ro\'yxatiga',
     noAnalysis: 'Tahlil hali boshlanmagan',
+    notAnalyzedError: {
+      title: 'Dars tahlil qilinmagan',
+      description: 'AI kontent tahlil qila olmadi. Manba mavjud bo\'lmasligi yoki kontent yuklanmasligi mumkin.',
+      retry: 'Tahlilni qayta boshlash',
+      retrying: 'Tahlil qilinmoqda...',
+      retryError: 'Tahlil muvaffaqiyatsiz',
+      createNew: 'Yangi dars yaratish',
+    },
     tabs: {
       materials: 'Materiallar',
       assignment: 'Topshiriq',
@@ -139,6 +148,15 @@ export default {
       title: 'Materiallar',
       search: 'Materiallarni qidirish',
       noMaterials: 'Materiallar yo\'q',
+    },
+    summary: {
+      title: 'Dars xulosasi',
+      sources: 'Manbalar',
+      created: 'Yaratildi',
+      report: 'Qayta hikoya hisoboti',
+      noReport: 'Xulosa hali yaratilmagan',
+      generate: '✨ Xulosa yaratish',
+      generating: 'Yaratilmoqda...',
     },
   },
 
@@ -314,5 +332,8 @@ export default {
     unsupported_format: 'Qo\'llab-quvvatlanmaydigan fayl formati',
     pdf_read_error: 'PDF faylni o\'qib bo\'lmadi',
     docx_read_error: 'DOCX faylni o\'qib bo\'lmadi',
+    url_unreachable: 'Havola mavjud emas. URL manzilini tekshiring',
+    url_timeout: 'Havolani yuklashda vaqt tugadi',
+    url_http_error: 'Server xato qaytardi',
   },
 }

@@ -60,6 +60,7 @@ export default {
     dropzoneText: 'Нажмите или перетащите файлы сюда',
     dropzoneHint: 'TXT, MD, PDF, DOCX · до 20 МБ каждый',
     oversize: 'превышает 20 МБ',
+    langUnsupported: 'Не поддерживается',
     submit: 'Создать урок',
     submitting: {
       extract: 'Извлекаем текст...',
@@ -129,6 +130,14 @@ export default {
     defaultError: 'Ошибка создания задания',
     backToLessons: '← К списку уроков',
     noAnalysis: 'Анализ ещё не запущен',
+    notAnalyzedError: {
+      title: 'Урок не проанализирован',
+      description: 'ИИ не смог обработать содержимое. Возможно, ссылка недоступна или контент не удалось загрузить.',
+      retry: 'Повторить анализ',
+      retrying: 'Анализируем...',
+      retryError: 'Не удалось выполнить анализ',
+      createNew: 'Создать новый урок',
+    },
     tabs: {
       materials: 'Материалы',
       assignment: 'Задание',
@@ -139,6 +148,15 @@ export default {
       title: 'Материалы',
       search: 'Поиск в материалах',
       noMaterials: 'Нет материалов',
+    },
+    summary: {
+      title: 'Конспект урока',
+      sources: 'Источники',
+      created: 'Создан',
+      report: 'Отчёт пересказа',
+      noReport: 'Конспект ещё не сгенерирован',
+      generate: '✨ Сгенерировать конспект',
+      generating: 'Генерируем...',
     },
   },
 
@@ -314,5 +332,8 @@ export default {
     unsupported_format: 'Неподдерживаемый формат файла',
     pdf_read_error: 'Не удалось прочитать PDF',
     docx_read_error: 'Не удалось прочитать DOCX',
+    url_unreachable: 'Ссылка недоступна. Проверьте правильность URL',
+    url_timeout: 'Превышено время ожидания при загрузке ссылки',
+    url_http_error: 'Сервер по указанной ссылке вернул ошибку',
   },
 }

@@ -10,6 +10,9 @@ export interface SourceMeta {
   name: string
   type: 'file' | 'url' | 'text'
   size?: number
+  language?: string
+  content?: string | null
+  fetch_error?: boolean
 }
 
 export interface Lesson {

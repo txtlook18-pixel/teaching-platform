@@ -60,6 +60,7 @@ export default {
     dropzoneText: 'Click or drag files here',
     dropzoneHint: 'TXT, MD, PDF, DOCX · up to 20 MB each',
     oversize: 'exceeds 20 MB',
+    langUnsupported: 'Not supported',
     submit: 'Create Lesson',
     submitting: {
       extract: 'Extracting text...',
@@ -129,6 +130,14 @@ export default {
     defaultError: 'Error creating assignment',
     backToLessons: '← Back to lessons',
     noAnalysis: 'Analysis not yet started',
+    notAnalyzedError: {
+      title: 'Lesson not analyzed',
+      description: 'AI could not process the content. The source may be unavailable or its content could not be loaded.',
+      retry: 'Retry analysis',
+      retrying: 'Analyzing...',
+      retryError: 'Analysis failed',
+      createNew: 'Create new lesson',
+    },
     tabs: {
       materials: 'Materials',
       assignment: 'Assignment',
@@ -139,6 +148,15 @@ export default {
       title: 'Materials',
       search: 'Search materials',
       noMaterials: 'No materials',
+    },
+    summary: {
+      title: 'Lesson Summary',
+      sources: 'Sources',
+      created: 'Created',
+      report: 'Retelling Report',
+      noReport: 'Summary not generated yet',
+      generate: '✨ Generate Summary',
+      generating: 'Generating...',
     },
   },
 
@@ -314,5 +332,8 @@ export default {
     unsupported_format: 'Unsupported file format',
     pdf_read_error: 'Could not read PDF file',
     docx_read_error: 'Could not read DOCX file',
+    url_unreachable: 'URL is not accessible. Please check the link',
+    url_timeout: 'Connection timed out while loading the URL',
+    url_http_error: 'The server at this URL returned an error',
   },
 }

@@ -50,9 +50,12 @@
                 v-for="tab in tabs"
                 :key="tab.key"
                 class="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap"
-                :class="activeTab === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                :class="!isAnalyzed
+                  ? 'border-transparent text-gray-300 cursor-not-allowed'
+                  : activeTab === tab.key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                :disabled="!isAnalyzed"
                 @click="switchTab(tab.key)"
               >
                 {{ tab.icon }} {{ tab.label }}
@@ -60,9 +63,33 @@
             </nav>
           </div>
 
+          <!-- Not analyzed warning -->
+          <div v-if="!isAnalyzed" class="card py-12 flex flex-col items-center text-center gap-5">
+            <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+              <svg class="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-800 text-lg mb-2">{{ t('lesson.notAnalyzedError.title') }}</h3>
+              <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">{{ t('lesson.notAnalyzedError.description') }}</p>
+            </div>
+            <router-link
+              to="/lessons/create"
+              class="px-5 py-2.5 border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              {{ t('lesson.notAnalyzedError.createNew') }}
+            </router-link>
+          </div>
+
+          <template v-else>
+
           <!-- Tab: Материалы -->
           <div v-if="activeTab === 'materials'">
-            <div v-if="lesson.cluster_data" class="card">
+
+            <!-- Карточка анализа -->
+            <div v-if="lesson.cluster_data" class="card mb-4">
               <h2 class="font-semibold text-gray-700 mb-4">{{ t('lesson.analysis.title') }}</h2>
               <div class="grid grid-cols-2 gap-6">
                 <div>
@@ -85,22 +112,81 @@
                     >{{ k }}</span>
                   </div>
                 </div>
-                <div>
-                  <p class="text-xs text-gray-400 mb-1">{{ t('lesson.analysis.difficulty') }}</p>
-                  <p class="font-medium capitalize mt-1">{{ lesson.cluster_data.difficulty_estimate }}</p>
-                </div>
-                <router-link
-                  :to="`/lessons/${lesson.id}/questions`"
-                  class="block hover:opacity-70 transition-opacity cursor-pointer"
-                >
-                  <p class="text-xs text-gray-400 mb-1">{{ t('lesson.analysis.suggestedCount') }}</p>
-                  <p class="font-medium mt-1 text-blue-600">{{ lesson.cluster_data.suggested_question_count }}</p>
-                </router-link>
               </div>
             </div>
-            <div v-else class="card text-center py-12">
+            <div v-else class="card mb-4 text-center py-12">
               <p class="text-gray-400 text-sm">{{ t('lesson.noAnalysis') }}</p>
             </div>
+
+            <!-- Summary карточка -->
+            <div class="card">
+              <!-- Заголовок = main_topic -->
+              <h2 class="font-bold text-gray-900 text-xl leading-snug mb-2">
+                {{ lesson.cluster_data?.main_topic ?? lesson.title }}
+              </h2>
+
+              <!-- Мета-строка: дата -->
+              <div class="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                {{ formatDate(lesson.created_at) }}
+              </div>
+
+              <!-- Источники чипами -->
+              <div v-if="lesson.sources_metadata?.length" class="flex flex-wrap gap-1.5 mb-5">
+                <span
+                  v-for="src in lesson.sources_metadata"
+                  :key="src.name"
+                  :title="src.name"
+                  class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium max-w-[200px]"
+                  :class="src.fetch_error
+                    ? 'bg-red-50 text-red-400 line-through'
+                    : 'bg-gray-100 text-gray-600'"
+                >
+                  <span class="shrink-0 text-[11px]">{{ sourceIcon(src) }}</span>
+                  <span class="truncate">{{ sourceDisplayName(src) }}</span>
+                </span>
+              </div>
+
+              <!-- Тело: retelling-отчёт с форматированием -->
+              <template v-if="retellingBlocks.length">
+                <template v-for="(block, i) in retellingBlocks" :key="i">
+                  <h3
+                    v-if="block.type === 'heading'"
+                    class="font-semibold text-gray-800 text-sm uppercase tracking-wide mt-5 mb-2"
+                    :class="{ 'mt-0': i === 0 }"
+                  >{{ block.content }}</h3>
+                  <ul v-else-if="block.type === 'list'" class="space-y-1.5 mb-3">
+                    <li
+                      v-for="(item, j) in block.items"
+                      :key="j"
+                      class="flex items-start gap-2 text-sm text-gray-700 leading-relaxed"
+                    >
+                      <span class="mt-[7px] w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+                      <span v-html="formatInline(item)"></span>
+                    </li>
+                  </ul>
+                  <p
+                    v-else
+                    class="text-sm text-gray-700 leading-relaxed mb-2"
+                    v-html="formatInline(block.content)"
+                  ></p>
+                </template>
+              </template>
+              <div v-else class="flex flex-col items-center gap-2 py-10 text-gray-400">
+                <template v-if="generatingSummary">
+                  <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  <p class="text-sm">{{ t('lesson.summary.generating') }}</p>
+                </template>
+                <p v-else class="text-sm italic">{{ t('lesson.summary.noReport') }}</p>
+              </div>
+            </div>
+
           </div>
 
           <!-- Tab: Задание (battle, analysis, cards) -->
@@ -287,6 +373,8 @@
             <div v-if="createError" class="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">{{ createError }}</div>
           </div>
 
+          </template>
+
         </div>
 
         <!-- Right sidebar (always visible) -->
@@ -312,15 +400,37 @@
               <label
                 v-for="src in filteredSources"
                 :key="src.name"
-                class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors cursor-default"
+                class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors select-none"
+                :class="src.fetch_error
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'hover:bg-gray-50 cursor-pointer ' + (selectedSources.has(src.name) ? '' : 'opacity-50')"
               >
-                <span class="text-base shrink-0">{{ sourceIcon(src) }}</span>
-                <span class="flex-1 truncate text-sm text-gray-700" :title="src.name">{{ src.name }}</span>
+                <span class="text-base shrink-0" :class="src.fetch_error ? 'grayscale' : ''">{{ sourceIcon(src) }}</span>
+                <span
+                  class="flex-1 truncate text-sm shrink min-w-0"
+                  :class="src.fetch_error ? 'text-red-500 line-through' : 'text-gray-700'"
+                  :title="src.name"
+                >{{ src.name }}</span>
+                <template v-if="src.fetch_error">
+                  <span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap">Ошибка</span>
+                </template>
+                <template v-else-if="sourceLangs[src.name]">
+                  <span
+                    v-if="sourceLangs[src.name].supported"
+                    class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium shrink-0"
+                  >{{ sourceLangs[src.name].lang.toUpperCase() }}</span>
+                  <span
+                    v-else
+                    class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium shrink-0"
+                  >⚠️</span>
+                </template>
                 <input
                   type="checkbox"
-                  checked
-                  class="w-4 h-4 rounded accent-blue-500 shrink-0 cursor-default"
-                  @click.prevent
+                  :checked="selectedSources.has(src.name)"
+                  :disabled="src.fetch_error"
+                  class="w-4 h-4 rounded accent-blue-500 shrink-0"
+                  :class="src.fetch_error ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'"
+                  @change="toggleSource(src.name)"
                 />
               </label>
               <p v-if="!filteredSources.length" class="text-sm text-gray-400 text-center py-6">
@@ -345,13 +455,51 @@ import { apiClient } from '@/services/api'
 import { translateApiError } from '@/i18n'
 import type { Lesson, SourceMeta } from '@/types'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const lessonStore = useLessonStore()
 
 const loading = ref(true)
 const lesson = ref<Lesson | null>(null)
+const retellingReport = ref<string | null>(null)
+const generatingSummary = ref(false)
+const selectedSources = ref<Set<string>>(new Set())
+const sourceLangs = ref<Record<string, { lang: string; supported: boolean }>>({})
+const reanalyzing = ref(false)
+const reanalyzeError = ref('')
+
+const isAnalyzed = computed(() => !!lesson.value?.cluster_data)
+
+async function reanalyze() {
+  if (!lesson.value) return
+  reanalyzing.value = true
+  reanalyzeError.value = ''
+  try {
+    const res = await apiClient.post<typeof lesson.value>(`/lessons/${lesson.value.id}/analyze`)
+    lesson.value = res.data
+  } catch (e: any) {
+    reanalyzeError.value = translateApiError(e.response?.data?.detail, t('lesson.notAnalyzedError.retryError'))
+  } finally {
+    reanalyzing.value = false
+  }
+}
+
+async function detectSourceLangs() {
+  const sources = lesson.value?.sources_metadata ?? []
+  const lessonLang = lesson.value?.language ?? ''
+  const supported = ['ru', 'en', 'uz']
+  for (const src of sources) {
+    if (src.content) {
+      try {
+        const res = await apiClient.post('/lessons/detect-language', { text: src.content.slice(0, 3000) })
+        sourceLangs.value[src.name] = { lang: res.data.language, supported: res.data.supported }
+      } catch {}
+    } else if (lessonLang) {
+      sourceLangs.value[src.name] = { lang: lessonLang, supported: supported.includes(lessonLang) }
+    }
+  }
+}
 
 type TabKey = 'materials' | 'assignment' | 'test' | 'chat'
 const activeTab = ref<TabKey>('materials')
@@ -399,12 +547,101 @@ const allTopicsUsed = computed(() => {
   return topics.length > 0 && topics.every(s => usedAnalysisTopics.value.has(s))
 })
 
+type RetellingBlock =
+  | { type: 'heading'; content: string }
+  | { type: 'paragraph'; content: string }
+  | { type: 'list'; content: ''; items: string[] }
+
+const retellingBlocks = computed<RetellingBlock[]>(() => {
+  if (!retellingReport.value) return []
+  const lines = retellingReport.value.split('\n')
+  const result: RetellingBlock[] = []
+  let currentList: string[] | null = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      if (currentList) { result.push({ type: 'list', content: '', items: currentList }); currentList = null }
+      continue
+    }
+    if (trimmed.startsWith('## ')) {
+      if (currentList) { result.push({ type: 'list', content: '', items: currentList }); currentList = null }
+      result.push({ type: 'heading', content: trimmed.slice(3) })
+    } else if (trimmed.startsWith('- ')) {
+      if (!currentList) currentList = []
+      currentList.push(trimmed.slice(2))
+    } else {
+      if (currentList) { result.push({ type: 'list', content: '', items: currentList }); currentList = null }
+      result.push({ type: 'paragraph', content: trimmed })
+    }
+  }
+  if (currentList) result.push({ type: 'list', content: '', items: currentList })
+  return result
+})
+
+function formatInline(text: string): string {
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+}
+
+function sourcesWord(count: number): string {
+  if (locale.value === 'uz') return 'manba'
+  if (locale.value === 'en') return count === 1 ? 'source' : 'sources'
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) return 'источник'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'источника'
+  return 'источников'
+}
+
+function formatDate(dt: string): string {
+  return new Date(dt).toLocaleDateString(locale.value || 'ru', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+async function generateSummary() {
+  if (!lesson.value) return
+  generatingSummary.value = true
+  try {
+    const res = await apiClient.post(`/lessons/${lesson.value.id}/generate-summary`, {
+      source_names: [...selectedSources.value],
+    })
+    retellingReport.value = res.data.summary
+  } catch {}
+  finally { generatingSummary.value = false }
+}
+
+async function loadRetellingReport() {
+  if (!lesson.value) return
+  try {
+    const res = await apiClient.get(`/assignments/lessons/${lesson.value.id}/assignments`)
+    const retellings: any[] = (res.data as any[]).filter(
+      (a) => a.assignment_type === 'retelling' && a.questions_data?.reference,
+    )
+    if (retellings.length) {
+      retellingReport.value = retellings[retellings.length - 1].questions_data.reference
+    }
+  } catch {}
+}
+
 const filteredSources = computed<SourceMeta[]>(() => {
   const sources = lesson.value?.sources_metadata ?? []
   if (!sidebarSearch.value.trim()) return sources
   const q = sidebarSearch.value.toLowerCase()
   return sources.filter(s => s.name.toLowerCase().includes(q))
 })
+
+function toggleSource(name: string) {
+  const next = new Set(selectedSources.value)
+  if (next.has(name)) next.delete(name)
+  else next.add(name)
+  selectedSources.value = next
+}
+
+function sourceDisplayName(src: SourceMeta): string {
+  if (src.type === 'url') {
+    try { return new URL(src.name).hostname } catch { return src.name }
+  }
+  return src.name
+}
 
 function sourceIcon(src: SourceMeta): string {
   if (src.type === 'url')  return '🔗'
@@ -452,8 +689,16 @@ watch(selectedType, async (type) => {
 onMounted(async () => {
   try {
     lesson.value = await lessonStore.fetchLesson(route.params.id as string)
+    selectedSources.value = new Set((lesson.value?.sources_metadata ?? []).map((s) => s.name))
+    await loadRetellingReport()
   } finally {
     loading.value = false
+  }
+  detectSourceLangs()
+  // Автогенерация конспекта если ещё нет — запускается в фоне после отображения страницы
+  if (!retellingReport.value && lesson.value?.source_content) {
+    generatingSummary.value = true
+    generateSummary()
   }
 })
 
