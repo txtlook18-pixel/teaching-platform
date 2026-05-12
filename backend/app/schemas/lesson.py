@@ -8,6 +8,9 @@ class SourceMeta(BaseModel):
     name: str
     type: str  # "file" | "url" | "text"
     size: Optional[int] = None
+    language: Optional[str] = None
+    content: Optional[str] = None
+    fetch_error: bool = False
 
 
 class LessonCreate(BaseModel):

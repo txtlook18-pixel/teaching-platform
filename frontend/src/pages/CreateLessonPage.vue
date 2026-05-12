@@ -37,87 +37,61 @@
               <div
                 v-for="(src, i) in sources"
                 :key="src.id"
-                class="border border-gray-200 rounded-xl bg-white overflow-hidden"
+                class="border rounded-xl bg-white overflow-hidden transition-all"
+                :class="[
+                  sortDragOver === i && sortDragIndex !== i ? 'border-blue-400 shadow-sm' : 'border-gray-200',
+                  sortDragIndex === i ? 'opacity-40' : '',
+                ]"
+                @dragover.prevent="sortDragOver = i"
+                @dragleave="sortDragOver = null"
+                @drop.prevent="onSortDrop(i)"
               >
                 <!-- File row -->
                 <div v-if="src.type === 'file'" class="flex items-center gap-3 px-4 py-3">
+                  <span draggable="true" class="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing select-none shrink-0" @dragstart="onSortStart(i)" @dragend="onSortEnd">⠿</span>
                   <span class="text-lg shrink-0">{{ fileIcon(src.file.name) }}</span>
                   <span class="flex-1 truncate text-sm font-medium text-gray-700">{{ src.file.name }}</span>
                   <span class="text-xs text-gray-400 shrink-0">{{ formatSize(src.file.size) }}</span>
-                  <span v-if="src.file.size > MAX_FILE_BYTES" class="text-xs text-red-500 shrink-0">
-                    {{ t('createLesson.oversize') }}
-                  </span>
-                  <button
-                    type="button"
-                    class="ml-1 text-gray-300 hover:text-red-500 transition-colors text-lg leading-none shrink-0"
-                    @click="removeSource(i)"
-                  >×</button>
+                  <span v-if="src.file.size > MAX_FILE_BYTES" class="text-xs text-red-500 shrink-0">{{ t('createLesson.oversize') }}</span>
+                  <template v-if="'detectedLang' in src && src.detectedLang">
+                    <span v-if="src.langSupported" class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium shrink-0">{{ src.detectedLang.toUpperCase() }}</span>
+                    <span v-else class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium shrink-0">⚠️ {{ t('createLesson.langUnsupported') }}</span>
+                  </template>
+                  <button type="button" class="ml-1 text-gray-300 hover:text-red-500 transition-colors text-lg leading-none shrink-0" @click="removeSource(i)">×</button>
                 </div>
 
                 <!-- URL row -->
                 <div v-else-if="src.type === 'url'" class="flex items-center gap-3 px-4 py-3">
+                  <span draggable="true" class="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing select-none shrink-0" @dragstart="onSortStart(i)" @dragend="onSortEnd">⠿</span>
                   <span class="shrink-0">🔗</span>
                   <template v-if="src.editing">
-                    <input
-                      v-model="src.url"
-                      type="url"
-                      class="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      @keydown.enter.prevent="src.editing = false"
-                    />
-                    <button
-                      type="button"
-                      class="text-xs text-blue-600 font-semibold shrink-0 hover:text-blue-700"
-                      @click="src.editing = false"
-                    >{{ t('createLesson.saveBtn') }}</button>
+                    <input v-model="src.url" type="url" class="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400" @keydown.enter.prevent="src.editing = false" />
+                    <button type="button" class="text-xs text-blue-600 font-semibold shrink-0 hover:text-blue-700" @click="src.editing = false">{{ t('createLesson.saveBtn') }}</button>
                   </template>
                   <template v-else>
                     <span class="flex-1 truncate text-sm text-blue-600">{{ src.url }}</span>
-                    <span
-                      class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 font-medium"
-                      :class="urlTypeBadgeClass(src.url)"
-                    >
-                      {{ urlTypeIcon(src.url) }} {{ t(`createLesson.urlType.${urlTypeKey(src.url)}`) }}
-                    </span>
-                    <button
-                      type="button"
-                      class="text-gray-400 hover:text-gray-600 transition-colors shrink-0 text-base"
-                      @click="src.editing = true"
-                    >✏️</button>
+                    <span class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 font-medium" :class="urlTypeBadgeClass(src.url)">{{ urlTypeIcon(src.url) }} {{ t(`createLesson.urlType.${urlTypeKey(src.url)}`) }}</span>
+                    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors shrink-0 text-base" @click="src.editing = true">✏️</button>
                   </template>
-                  <button
-                    type="button"
-                    class="ml-1 text-gray-300 hover:text-red-500 transition-colors text-lg leading-none shrink-0"
-                    @click="removeSource(i)"
-                  >×</button>
+                  <button type="button" class="ml-1 text-gray-300 hover:text-red-500 transition-colors text-lg leading-none shrink-0" @click="removeSource(i)">×</button>
                 </div>
 
                 <!-- Text note row -->
                 <div v-else class="px-4 py-3">
                   <div class="flex items-center gap-2 mb-2">
+                    <span draggable="true" class="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing select-none shrink-0" @dragstart="onSortStart(i)" @dragend="onSortEnd">⠿</span>
                     <span class="shrink-0">📝</span>
-                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      {{ t('createLesson.textNote') }} {{ textNoteIndex(i) }}
-                    </span>
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ t('createLesson.textNote') }} {{ textNoteIndex(i) }}</span>
+                    <template v-if="'detectedLang' in src && src.detectedLang">
+                      <span v-if="src.langSupported" class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{{ src.detectedLang.toUpperCase() }}</span>
+                      <span v-else class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">⚠️ {{ t('createLesson.langUnsupported') }}</span>
+                    </template>
                     <div class="ml-auto flex items-center gap-2">
-                      <button
-                        type="button"
-                        class="text-xs font-semibold transition-colors shrink-0"
-                        :class="src.editing ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-gray-600'"
-                        @click="src.editing = !src.editing"
-                      >{{ src.editing ? t('createLesson.saveBtn') : '✏️' }}</button>
-                      <button
-                        type="button"
-                        class="text-gray-300 hover:text-red-500 transition-colors text-lg leading-none"
-                        @click="removeSource(i)"
-                      >×</button>
+                      <button type="button" class="text-xs font-semibold transition-colors shrink-0" :class="src.editing ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-gray-600'" @click="src.editing = !src.editing">{{ src.editing ? t('createLesson.saveBtn') : '✏️' }}</button>
+                      <button type="button" class="text-gray-300 hover:text-red-500 transition-colors text-lg leading-none" @click="removeSource(i)">×</button>
                     </div>
                   </div>
-                  <textarea
-                    v-if="src.editing"
-                    v-model="src.content"
-                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
-                    rows="5"
-                  ></textarea>
+                  <textarea v-if="src.editing" v-model="src.content" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y" rows="5"></textarea>
                   <p v-else class="text-sm text-gray-700 line-clamp-3 whitespace-pre-line leading-relaxed">{{ src.content }}</p>
                 </div>
               </div>
@@ -270,9 +244,10 @@ const MAX_FILE_BYTES = 20 * 1024 * 1024
 const localeFlagCodes: Record<string, string> = { ru: 'ru', en: 'us', uz: 'uz' }
 
 // ── Source types ──────────────────────────────────────────────────────────────
-type FileSource = { id: string; type: 'file'; file: File }
+type LangInfo = { detectedLang?: string; langSupported?: boolean }
+type FileSource = { id: string; type: 'file'; file: File } & LangInfo
 type UrlSource  = { id: string; type: 'url';  url: string; editing: boolean }
-type TextSource = { id: string; type: 'text'; content: string; editing: boolean }
+type TextSource = { id: string; type: 'text'; content: string; editing: boolean } & LangInfo
 type SourceItem = FileSource | UrlSource | TextSource
 
 let _nextId = 1
@@ -285,6 +260,21 @@ const fileInput  = ref<HTMLInputElement | null>(null)
 const loading      = ref(false)
 const loadingStage = ref<'extract' | 'fetch' | 'create' | 'analyze' | ''>('')
 const error        = ref('')
+
+const sortDragIndex = ref<number | null>(null)
+const sortDragOver  = ref<number | null>(null)
+function onSortStart(i: number) { sortDragIndex.value = i }
+function onSortEnd()            { sortDragIndex.value = null; sortDragOver.value = null }
+function onSortDrop(i: number) {
+  if (sortDragIndex.value !== null && sortDragIndex.value !== i) {
+    const items = [...sources.value]
+    const [moved] = items.splice(sortDragIndex.value, 1)
+    items.splice(i, 0, moved)
+    sources.value = items
+  }
+  sortDragIndex.value = null
+  sortDragOver.value  = null
+}
 
 const form = ref({ title: '', language: 'ru' })
 
@@ -320,6 +310,29 @@ function textNoteIndex(sourceIndex: number): number {
   return sources.value.slice(0, sourceIndex + 1).filter((s) => s.type === 'text').length
 }
 
+async function detectLang(index: number) {
+  const src = sources.value[index]
+  let text = ''
+  if (src.type === 'text') {
+    text = (src as TextSource).content
+  } else if (src.type === 'file') {
+    const ext = (src as FileSource).file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'txt' || ext === 'md') {
+      text = await new Promise<string>(resolve => {
+        const reader = new FileReader()
+        reader.onload = e => resolve((e.target?.result as string) || '')
+        reader.onerror = () => resolve('')
+        reader.readAsText((src as FileSource).file)
+      })
+    }
+  }
+  if (!text.trim()) return
+  try {
+    const res = await apiClient.post('/lessons/detect-language', { text: text.slice(0, 3000) })
+    sources.value[index] = { ...sources.value[index], detectedLang: res.data.language, langSupported: res.data.supported }
+  } catch {}
+}
+
 function addUrlSource() {
   const url = addInput.value.trim()
   if (!url) return
@@ -332,6 +345,7 @@ function addTextSource() {
   if (!content) return
   sources.value.push({ id: String(_nextId++), type: 'text', content, editing: false })
   addInput.value = ''
+  detectLang(sources.value.length - 1)
 }
 
 function removeSource(index: number) {
@@ -347,6 +361,7 @@ function addFiles(incoming: File[]) {
   for (const f of incoming) {
     if (!existing.has(f.name + f.size)) {
       sources.value.push({ id: String(_nextId++), type: 'file', file: f })
+      detectLang(sources.value.length - 1)
     }
   }
 }
@@ -396,16 +411,19 @@ async function handleCreate() {
     const urlSources  = sources.value.filter((s): s is UrlSource  => s.type === 'url')
     const textSources = sources.value.filter((s): s is TextSource => s.type === 'text')
 
-    const parts: string[] = []
-
+    // Extract files per-file to preserve individual content
+    let fileTexts: string[] = []
     if (fileSources.length) {
       loadingStage.value = 'extract'
       const fd = new FormData()
       for (const s of fileSources) fd.append('files', s.file)
-      const res = await apiClient.post<{ text: string; file_count: number }>('/lessons/extract-text', fd)
-      parts.push(res.data.text)
+      const res = await apiClient.post<{ files: { filename: string; text: string }[] }>('/lessons/extract-text-per-file', fd)
+      fileTexts = res.data.files.map((f) => f.text)
     }
 
+    // Assemble source_content: files first, then texts, then URLs (backward compat)
+    const parts: string[] = []
+    for (const t of fileTexts) if (t) parts.push(t)
     for (const s of textSources) parts.push(s.content)
 
     let sourceType: string
@@ -421,10 +439,15 @@ async function handleCreate() {
     }
 
     loadingStage.value = 'create'
+    let fileIdx = 0
     const sourcesMetadata = sources.value.map((s) => {
-      if (s.type === 'file') return { name: s.file.name, type: 'file' as const, size: s.file.size }
-      if (s.type === 'url')  return { name: s.url,      type: 'url'  as const }
-      return { name: `Текст ${textNoteIndex(sources.value.indexOf(s))}`, type: 'text' as const }
+      if (s.type === 'file') {
+        const content = fileTexts[fileIdx++] ?? null
+        return { name: (s as FileSource).file.name, type: 'file' as const, size: (s as FileSource).file.size, content }
+      }
+      if (s.type === 'url') return { name: (s as UrlSource).url, type: 'url' as const, content: null }
+      const content = (s as TextSource).content
+      return { name: `Текст ${textNoteIndex(sources.value.indexOf(s))}`, type: 'text' as const, content }
     })
     const lesson = await lessonStore.createLesson({
       title:            form.value.title,
@@ -437,6 +460,9 @@ async function handleCreate() {
     if (sourceType === 'url') {
       loadingStage.value = 'fetch'
       await apiClient.post(`/lessons/${lesson.id}/fetch-url`)
+    } else if (urlSources.length > 0) {
+      // Validate URL sources in multi-source lesson (non-blocking — marks fetch_error in metadata)
+      await apiClient.post(`/lessons/${lesson.id}/validate-url-sources`).catch(() => {})
     }
 
     loadingStage.value = 'analyze'
