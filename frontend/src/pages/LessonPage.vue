@@ -118,74 +118,78 @@
               <p class="text-gray-400 text-sm">{{ t('lesson.noAnalysis') }}</p>
             </div>
 
-            <!-- Summary карточка -->
-            <div class="card">
-              <!-- Заголовок = main_topic -->
-              <h2 class="font-bold text-gray-900 text-xl leading-snug mb-2">
-                {{ lesson.cluster_data?.main_topic ?? lesson.title }}
-              </h2>
-
-              <!-- Мета-строка: дата -->
-              <div class="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
-                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                {{ formatDate(lesson.created_at) }}
-              </div>
-
-              <!-- Источники чипами -->
-              <div v-if="lesson.sources_metadata?.length" class="flex flex-wrap gap-1.5 mb-5">
-                <span
-                  v-for="src in lesson.sources_metadata"
-                  :key="src.name"
-                  :title="src.name"
-                  class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium max-w-[200px]"
-                  :class="src.fetch_error
-                    ? 'bg-red-50 text-red-400 line-through'
-                    : 'bg-gray-100 text-gray-600'"
+            <!-- Per-source summary cards -->
+            <template
+              v-for="src in (lesson.sources_metadata ?? []).filter(s => !s.fetch_error)"
+              :key="src.name"
+            >
+              <div class="card mb-4">
+                <div
+                  class="flex items-center gap-2 pb-3 border-b border-gray-100 cursor-pointer select-none"
+                  :class="collapsedSources.has(src.name) ? '' : 'mb-4'"
+                  @click="toggleCollapse(src.name)"
                 >
-                  <span class="shrink-0 text-[11px]">{{ sourceIcon(src) }}</span>
-                  <span class="truncate">{{ sourceDisplayName(src) }}</span>
-                </span>
-              </div>
-
-              <!-- Тело: retelling-отчёт с форматированием -->
-              <template v-if="retellingBlocks.length">
-                <template v-for="(block, i) in retellingBlocks" :key="i">
-                  <h3
-                    v-if="block.type === 'heading'"
-                    class="font-semibold text-gray-800 text-sm uppercase tracking-wide mt-5 mb-2"
-                    :class="{ 'mt-0': i === 0 }"
-                  >{{ block.content }}</h3>
-                  <ul v-else-if="block.type === 'list'" class="space-y-1.5 mb-3">
-                    <li
-                      v-for="(item, j) in block.items"
-                      :key="j"
-                      class="flex items-start gap-2 text-sm text-gray-700 leading-relaxed"
-                    >
-                      <span class="mt-[7px] w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
-                      <span v-html="formatInline(item)"></span>
-                    </li>
-                  </ul>
-                  <p
-                    v-else
-                    class="text-sm text-gray-700 leading-relaxed mb-2"
-                    v-html="formatInline(block.content)"
-                  ></p>
-                </template>
-              </template>
-              <div v-else class="flex flex-col items-center gap-2 py-10 text-gray-400">
-                <template v-if="generatingSummary">
-                  <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  <span class="text-lg shrink-0">{{ sourceIcon(src) }}</span>
+                  <span
+                    class="font-semibold text-gray-800 truncate text-sm flex-1"
+                    :title="src.name"
+                  >{{ sourceDisplayName(src) }}</span>
+                  <svg
+                    class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200"
+                    :class="collapsedSources.has(src.name) ? '-rotate-90' : ''"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                   </svg>
-                  <p class="text-sm">{{ t('lesson.summary.generating') }}</p>
+                </div>
+
+                <template v-if="!collapsedSources.has(src.name)">
+                <template v-if="sourceSummaries[src.name]">
+                  <template v-for="(block, i) in parseRetellingBlocks(sourceSummaries[src.name])" :key="i">
+                    <h3
+                      v-if="block.type === 'heading'"
+                      class="font-semibold text-gray-800 text-sm uppercase tracking-wide mt-5 mb-2"
+                      :class="{ 'mt-0': i === 0 }"
+                    >{{ block.content }}</h3>
+                    <ul v-else-if="block.type === 'list'" class="space-y-1.5 mb-3">
+                      <li
+                        v-for="(item, j) in block.items"
+                        :key="j"
+                        class="flex items-start gap-2 text-sm text-gray-700 leading-relaxed"
+                      >
+                        <span class="mt-[7px] w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+                        <span v-html="formatInline(item)"></span>
+                      </li>
+                    </ul>
+                    <p
+                      v-else
+                      class="text-sm text-gray-700 leading-relaxed mb-2"
+                      v-html="formatInline(block.content)"
+                    ></p>
+                  </template>
                 </template>
-                <p v-else class="text-sm italic">{{ t('lesson.summary.noReport') }}</p>
+
+                <div v-else class="flex flex-col items-center gap-2 py-8 text-gray-400">
+                  <template v-if="loadingSourceSummaries[src.name]">
+                    <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    <p class="text-sm">{{ t('lesson.summary.generating') }}</p>
+                  </template>
+                  <template v-else>
+                    <p class="text-sm italic mb-3">{{ t('lesson.summary.noReport') }}</p>
+                    <button
+                      class="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                      @click.stop="generateOneSummary(src.name)"
+                    >
+                      Сгенерировать конспект
+                    </button>
+                  </template>
+                </div>
+                </template>
               </div>
-            </div>
+            </template>
 
           </div>
 
@@ -427,9 +431,9 @@
                 <input
                   type="checkbox"
                   :checked="selectedSources.has(src.name)"
-                  :disabled="src.fetch_error"
+                  :disabled="src.fetch_error || togglingSource === src.name"
                   class="w-4 h-4 rounded accent-blue-500 shrink-0"
-                  :class="src.fetch_error ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'"
+                  :class="src.fetch_error ? 'cursor-not-allowed opacity-40' : togglingSource === src.name ? 'opacity-50' : 'cursor-pointer'"
                   @change="toggleSource(src.name)"
                 />
               </label>
@@ -462,12 +466,20 @@ const lessonStore = useLessonStore()
 
 const loading = ref(true)
 const lesson = ref<Lesson | null>(null)
-const retellingReport = ref<string | null>(null)
-const generatingSummary = ref(false)
+const sourceSummaries = ref<Record<string, string>>({})
+const loadingSourceSummaries = ref<Record<string, boolean>>({})
 const selectedSources = ref<Set<string>>(new Set())
 const sourceLangs = ref<Record<string, { lang: string; supported: boolean }>>({})
 const reanalyzing = ref(false)
 const reanalyzeError = ref('')
+const togglingSource = ref<string | null>(null)
+const collapsedSources = ref<Set<string>>(new Set())
+function toggleCollapse(name: string) {
+  const next = new Set(collapsedSources.value)
+  if (next.has(name)) next.delete(name)
+  else next.add(name)
+  collapsedSources.value = next
+}
 
 const isAnalyzed = computed(() => !!lesson.value?.cluster_data)
 
@@ -552,9 +564,9 @@ type RetellingBlock =
   | { type: 'paragraph'; content: string }
   | { type: 'list'; content: ''; items: string[] }
 
-const retellingBlocks = computed<RetellingBlock[]>(() => {
-  if (!retellingReport.value) return []
-  const lines = retellingReport.value.split('\n')
+function parseRetellingBlocks(text: string): RetellingBlock[] {
+  if (!text) return []
+  const lines = text.split('\n')
   const result: RetellingBlock[] = []
   let currentList: string[] | null = null
 
@@ -577,7 +589,7 @@ const retellingBlocks = computed<RetellingBlock[]>(() => {
   }
   if (currentList) result.push({ type: 'list', content: '', items: currentList })
   return result
-})
+}
 
 function formatInline(text: string): string {
   return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -597,29 +609,24 @@ function formatDate(dt: string): string {
   return new Date(dt).toLocaleDateString(locale.value || 'ru', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-async function generateSummary() {
+async function generateOneSummary(srcName: string) {
   if (!lesson.value) return
-  generatingSummary.value = true
+  loadingSourceSummaries.value[srcName] = true
   try {
     const res = await apiClient.post(`/lessons/${lesson.value.id}/generate-summary`, {
-      source_names: [...selectedSources.value],
+      source_names: [srcName],
     })
-    retellingReport.value = res.data.summary
+    sourceSummaries.value[srcName] = res.data.summary
   } catch {}
-  finally { generatingSummary.value = false }
+  finally {
+    loadingSourceSummaries.value[srcName] = false
+  }
 }
 
-async function loadRetellingReport() {
+async function generateSourceSummaries() {
   if (!lesson.value) return
-  try {
-    const res = await apiClient.get(`/assignments/lessons/${lesson.value.id}/assignments`)
-    const retellings: any[] = (res.data as any[]).filter(
-      (a) => a.assignment_type === 'retelling' && a.questions_data?.reference,
-    )
-    if (retellings.length) {
-      retellingReport.value = retellings[retellings.length - 1].questions_data.reference
-    }
-  } catch {}
+  const sources = (lesson.value.sources_metadata ?? []).filter(s => !s.fetch_error)
+  await Promise.all(sources.map(src => generateOneSummary(src.name)))
 }
 
 const filteredSources = computed<SourceMeta[]>(() => {
@@ -629,11 +636,47 @@ const filteredSources = computed<SourceMeta[]>(() => {
   return sources.filter(s => s.name.toLowerCase().includes(q))
 })
 
-function toggleSource(name: string) {
+async function loadSourceStates() {
+  if (!lesson.value) return
+  try {
+    const res = await apiClient.get<{ name: string; enabled: boolean }[]>(
+      `/lessons/${lesson.value.id}/sources`
+    )
+    const next = new Set<string>()
+    for (const s of res.data) {
+      if (s.enabled) next.add(s.name)
+    }
+    // sources absent from DB are enabled by default
+    for (const s of lesson.value.sources_metadata ?? []) {
+      if (!res.data.find(r => r.name === s.name)) next.add(s.name)
+    }
+    selectedSources.value = next
+  } catch {
+    // fallback: enable all
+    selectedSources.value = new Set((lesson.value?.sources_metadata ?? []).map(s => s.name))
+  }
+}
+
+async function toggleSource(name: string) {
+  if (togglingSource.value) return
+  // optimistic update
   const next = new Set(selectedSources.value)
   if (next.has(name)) next.delete(name)
   else next.add(name)
   selectedSources.value = next
+
+  togglingSource.value = name
+  try {
+    await apiClient.patch(`/lessons/${lesson.value!.id}/sources/toggle`, { source_name: name })
+  } catch {
+    // rollback
+    const rollback = new Set(selectedSources.value)
+    if (rollback.has(name)) rollback.delete(name)
+    else rollback.add(name)
+    selectedSources.value = rollback
+  } finally {
+    togglingSource.value = null
+  }
 }
 
 function sourceDisplayName(src: SourceMeta): string {
@@ -689,16 +732,15 @@ watch(selectedType, async (type) => {
 onMounted(async () => {
   try {
     lesson.value = await lessonStore.fetchLesson(route.params.id as string)
-    selectedSources.value = new Set((lesson.value?.sources_metadata ?? []).map((s) => s.name))
-    await loadRetellingReport()
+    await loadSourceStates()
   } finally {
     loading.value = false
   }
   detectSourceLangs()
-  // Автогенерация конспекта если ещё нет — запускается в фоне после отображения страницы
-  if (!retellingReport.value && lesson.value?.source_content) {
-    generatingSummary.value = true
-    generateSummary()
+  const validSources = (lesson.value?.sources_metadata ?? []).filter(s => !s.fetch_error)
+  if (validSources.length) {
+    collapsedSources.value = new Set(validSources.map(s => s.name))
+    generateSourceSummaries()
   }
 })
 

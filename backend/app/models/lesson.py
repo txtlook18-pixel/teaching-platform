@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Text, Enum
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Text, Enum, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -31,3 +31,17 @@ class Lesson(Base):
 
     teacher = relationship("User", back_populates="lessons")
     assignments = relationship("Assignment", back_populates="lesson", cascade="all, delete-orphan")
+    lesson_sources = relationship("LessonSource", back_populates="lesson", cascade="all, delete-orphan")
+
+
+class LessonSource(Base):
+    __tablename__ = "lesson_sources"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    lesson_id = Column(String(36), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
+    source_name = Column(String(500), nullable=False)
+    enabled = Column(Boolean, default=True, nullable=False)
+
+    lesson = relationship("Lesson", back_populates="lesson_sources")
+
+    __table_args__ = (UniqueConstraint("lesson_id", "source_name", name="uq_lesson_source"),)

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 from app.db.database import get_db
-from app.models.lesson import Lesson
+from app.models.lesson import Lesson, LessonSource
 from app.schemas.lesson import LessonCreate, LessonUpdate, LessonResponse
 from app.core.security import get_current_user_id
 from app.providers.factory import get_ai_provider
@@ -18,11 +18,17 @@ class ExtraTopicsRequest(BaseModel):
     exclude: List[str] = []
     count: int = 5
 
+class FetchUrlTextRequest(BaseModel):
+    url: str
+
 class DetectLanguageRequest(BaseModel):
     text: str
 
 class GenerateSummaryRequest(BaseModel):
     source_names: List[str] = []
+
+class ToggleSourceRequest(BaseModel):
+    source_name: str
 
 _MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
 _SUPPORTED_EXT = {".txt", ".md", ".pdf", ".docx"}
@@ -81,6 +87,22 @@ def _extract_file_text(raw: bytes, filename: str) -> str:
         return "\n".join(p.text for p in doc.paragraphs if p.text.strip()).strip()
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f'error.docx_read_error:{filename}:{exc}')
+
+
+@router.post("/fetch-url-text")
+async def fetch_url_text(
+    body: FetchUrlTextRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        text = await _fetch_url_text(body.url)
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=422, detail="error.url_timeout")
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=422, detail="error.url_http_error")
+    except Exception:
+        raise HTTPException(status_code=422, detail="error.url_unreachable")
+    return {"text": text}
 
 
 @router.post("/extract-text")
@@ -382,6 +404,17 @@ async def detect_language(
     return {"language": lang, "supported": lang in ("ru", "en", "uz")}
 
 
+async def _source_content(src: dict) -> str:
+    if src.get("content"):
+        return src["content"]
+    if src.get("type") == "url" and src.get("name") and not src.get("fetch_error"):
+        try:
+            return await _fetch_url_text(src["name"])
+        except Exception:
+            return ""
+    return ""
+
+
 @router.post("/{lesson_id}/generate-summary")
 async def generate_summary(
     lesson_id: str,
@@ -400,18 +433,81 @@ async def generate_summary(
 
     content = lesson.source_content or ""
     if body.source_names and lesson.sources_metadata:
-        selected = [
-            s.get("content", "")
-            for s in lesson.sources_metadata
-            if s.get("name") in body.source_names and s.get("content")
-        ]
-        if selected:
-            content = "\n\n---\n\n".join(selected)
+        target = set(body.source_names)
+        parts = []
+        for s in lesson.sources_metadata:
+            if s.get("name") in target:
+                text = await _source_content(s)
+                if text:
+                    parts.append(text)
+        if parts:
+            content = "\n\n---\n\n".join(parts)
 
     topic = (lesson.cluster_data or {}).get("main_topic", lesson.title)
     ai = get_ai_provider()
     summary = await ai.generate_reference_retelling(content, topic, lesson.language)
     return {"summary": summary}
+
+
+@router.get("/{lesson_id}/sources")
+async def get_lesson_sources(
+    lesson_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lesson).where(Lesson.id == lesson_id, Lesson.teacher_id == user_id)
+    )
+    lesson = result.scalar_one_or_none()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    db_rows = await db.execute(
+        select(LessonSource).where(LessonSource.lesson_id == lesson_id)
+    )
+    enabled_map = {row.source_name: row.enabled for row in db_rows.scalars().all()}
+
+    sources = lesson.sources_metadata or []
+    return [
+        {
+            "name": s.get("name"),
+            "enabled": enabled_map.get(s.get("name"), True),
+        }
+        for s in sources
+        if not s.get("fetch_error")
+    ]
+
+
+@router.patch("/{lesson_id}/sources/toggle")
+async def toggle_lesson_source(
+    lesson_id: str,
+    body: ToggleSourceRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lesson).where(Lesson.id == lesson_id, Lesson.teacher_id == user_id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    source_name = body.source_name
+    row_result = await db.execute(
+        select(LessonSource).where(
+            LessonSource.lesson_id == lesson_id,
+            LessonSource.source_name == source_name,
+        )
+    )
+    row = row_result.scalar_one_or_none()
+
+    if row is None:
+        row = LessonSource(lesson_id=lesson_id, source_name=source_name, enabled=False)
+        db.add(row)
+    else:
+        row.enabled = not row.enabled
+
+    await db.commit()
+    return {"source_name": source_name, "enabled": row.enabled}
 
 
 @router.post("/{lesson_id}/topics/more")

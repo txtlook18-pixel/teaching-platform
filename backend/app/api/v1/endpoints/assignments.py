@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
 from app.db.database import get_db
-from app.models.lesson import Lesson
+from app.models.lesson import Lesson, LessonSource
 from app.models.assignment import Assignment, AssignmentStatus
 from app.models.session import StudentSession, StudentResponse
 from app.schemas.assignment import (
@@ -157,7 +157,26 @@ async def generate_content(
     assignment, lesson = row
 
     ai = get_ai_provider()
-    content = lesson.source_content or ""
+
+    # Build content from enabled sources only; fall back to full source_content
+    sources_result = await db.execute(
+        select(LessonSource).where(LessonSource.lesson_id == lesson.id)
+    )
+    enabled_map = {r.source_name: r.enabled for r in sources_result.scalars().all()}
+
+    metadata = lesson.sources_metadata or []
+    if metadata and enabled_map:
+        filtered = [
+            s.get("content", "")
+            for s in metadata
+            if not s.get("fetch_error")
+            and enabled_map.get(s.get("name"), True)
+            and s.get("content")
+        ]
+        content = "\n\n---\n\n".join(filtered) if filtered else (lesson.source_content or "")
+    else:
+        content = lesson.source_content or ""
+
     topic = lesson.cluster_data.get("main_topic", lesson.title) if lesson.cluster_data else lesson.title
 
     atype = assignment.assignment_type.value

@@ -421,7 +421,24 @@ async function handleCreate() {
       fileTexts = res.data.files.map((f) => f.text)
     }
 
-    // Assemble source_content: files first, then texts, then URLs (backward compat)
+    // Fetch URL content for multi-source lessons
+    let urlTexts: (string | null)[] = urlSources.map(() => null)
+    const isMultiSource = fileSources.length + textSources.length + urlSources.length > 1 || urlSources.length > 1
+    if (urlSources.length > 0 && isMultiSource) {
+      loadingStage.value = 'fetch'
+      urlTexts = await Promise.all(
+        urlSources.map(async (s) => {
+          try {
+            const res = await apiClient.post<{ text: string }>('/lessons/fetch-url-text', { url: s.url })
+            return res.data.text || null
+          } catch {
+            return null
+          }
+        })
+      )
+    }
+
+    // Assemble source_content: files first, then texts, then URLs
     const parts: string[] = []
     for (const t of fileTexts) if (t) parts.push(t)
     for (const s of textSources) parts.push(s.content)
@@ -433,19 +450,23 @@ async function handleCreate() {
       sourceType    = 'url'
       sourceContent = urlSources[0].url
     } else {
-      for (const s of urlSources) parts.push(s.url)
+      for (const t of urlTexts) if (t) parts.push(t)
       sourceType    = 'text'
       sourceContent = parts.join('\n\n---\n\n')
     }
 
     loadingStage.value = 'create'
     let fileIdx = 0
+    let urlIdx = 0
     const sourcesMetadata = sources.value.map((s) => {
       if (s.type === 'file') {
         const content = fileTexts[fileIdx++] ?? null
         return { name: (s as FileSource).file.name, type: 'file' as const, size: (s as FileSource).file.size, content }
       }
-      if (s.type === 'url') return { name: (s as UrlSource).url, type: 'url' as const, content: null }
+      if (s.type === 'url') {
+        const content = urlTexts[urlIdx++] ?? null
+        return { name: (s as UrlSource).url, type: 'url' as const, content }
+      }
       const content = (s as TextSource).content
       return { name: `Текст ${textNoteIndex(sources.value.indexOf(s))}`, type: 'text' as const, content }
     })
@@ -460,9 +481,6 @@ async function handleCreate() {
     if (sourceType === 'url') {
       loadingStage.value = 'fetch'
       await apiClient.post(`/lessons/${lesson.id}/fetch-url`)
-    } else if (urlSources.length > 0) {
-      // Validate URL sources in multi-source lesson (non-blocking — marks fetch_error in metadata)
-      await apiClient.post(`/lessons/${lesson.id}/validate-url-sources`).catch(() => {})
     }
 
     loadingStage.value = 'analyze'
