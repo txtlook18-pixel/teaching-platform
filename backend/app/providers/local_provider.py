@@ -72,13 +72,27 @@ Language: {language}"""
     async def generate_reference_retelling(
         self, content, topic, language="ru"
     ) -> str:
-        prompt = f"""Create a structured educational report about "{topic}" using these sections:
-## Краткое изложение
-## Ключевые идеи
-## Важные понятия
-## Вывод
+        prompt = f"""Create a unified structured study summary from all attached sources about "{topic}".
 
-Content: {content[:2000]}
+Requirements:
+- Extract only key ideas, definitions, facts, conclusions.
+- Remove filler, repetitions, secondary info.
+- Merge overlapping themes from different sources.
+- Explain complex terms in simple language.
+- Add a brief conclusion after each section.
+
+Use EXACTLY this structure (## headings, - for lists):
+
+## Название темы
+## Основные понятия
+## Ключевые идеи
+## Примеры и аргументы
+## Итог по теме
+## Краткое summary
+## Возможные вопросы к экзамену
+## Важно запомнить
+
+Content: {content[:3000]}
 Language: {language}"""
         return await self._generate(prompt)
 

@@ -5,7 +5,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from typing import List
 from app.db.database import get_db
 from app.models.lesson import Lesson, LessonSource
@@ -369,11 +369,25 @@ async def analyze_lesson(
     lesson = result.scalar_one_or_none()
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
-    if not lesson.source_content:
+    if not lesson.source_content and not lesson.sources_metadata:
+        raise HTTPException(status_code=400, detail="No content to analyze")
+
+    # Build balanced excerpt: take proportional chars from each source so
+    # all sources are represented within the AI's ~3000-char context window.
+    metadata = lesson.sources_metadata or []
+    valid_sources = [s for s in metadata if not s.get("fetch_error") and s.get("content")]
+    if valid_sources:
+        chars_each = max(500, 2800 // len(valid_sources))
+        parts = [s["content"][:chars_each] for s in valid_sources]
+        analyze_content = "\n\n---\n\n".join(parts)
+    else:
+        analyze_content = lesson.source_content or ""
+
+    if not analyze_content:
         raise HTTPException(status_code=400, detail="No content to analyze")
 
     ai = get_ai_provider()
-    cluster_data = await ai.analyze_content(lesson.source_content, lesson.language)
+    cluster_data = await ai.analyze_content(analyze_content, lesson.language)
     lesson.cluster_data = cluster_data
 
     await db.commit()
@@ -435,13 +449,21 @@ async def generate_summary(
     if body.source_names and lesson.sources_metadata:
         target = set(body.source_names)
         parts = []
+        is_video_only = False
         for s in lesson.sources_metadata:
-            if s.get("name") in target:
-                text = await _source_content(s)
-                if text:
-                    parts.append(text)
+            if s.get("name") not in target:
+                continue
+            if s.get("type") == "url" and _VIDEO_HOSTS.search(s.get("name", "")):
+                is_video_only = True
+                continue
+            text = await _source_content(s)
+            if text:
+                parts.append(text)
         if parts:
             content = "\n\n---\n\n".join(parts)
+        elif is_video_only:
+            raise HTTPException(status_code=422, detail="error.video_no_summary")
+        # else: no content found for non-video source — fall back to lesson.source_content
 
     topic = (lesson.cluster_data or {}).get("main_topic", lesson.title)
     ai = get_ai_provider()
@@ -471,7 +493,7 @@ async def get_lesson_sources(
     return [
         {
             "name": s.get("name"),
-            "enabled": enabled_map.get(s.get("name"), True),
+            "enabled": enabled_map.get(s.get("name"), False),
         }
         for s in sources
         if not s.get("fetch_error")
@@ -501,13 +523,30 @@ async def toggle_lesson_source(
     row = row_result.scalar_one_or_none()
 
     if row is None:
-        row = LessonSource(lesson_id=lesson_id, source_name=source_name, enabled=False)
+        row = LessonSource(lesson_id=lesson_id, source_name=source_name, enabled=True)
         db.add(row)
     else:
         row.enabled = not row.enabled
 
     await db.commit()
     return {"source_name": source_name, "enabled": row.enabled}
+
+
+@router.delete("/{lesson_id}/sources")
+async def reset_lesson_sources(
+    lesson_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lesson).where(Lesson.id == lesson_id, Lesson.teacher_id == user_id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    await db.execute(delete(LessonSource).where(LessonSource.lesson_id == lesson_id))
+    await db.commit()
+    return {"status": "reset"}
 
 
 @router.post("/{lesson_id}/topics/more")

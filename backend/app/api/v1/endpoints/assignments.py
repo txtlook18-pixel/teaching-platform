@@ -17,6 +17,7 @@ from app.models.assignment import AssignmentType
 from app.core.security import get_current_user_id
 from app.providers.factory import get_ai_provider
 from app.ws.manager import manager as ws_manager
+from app.api.v1.endpoints.lessons import _fetch_url_text
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
 
@@ -165,15 +166,23 @@ async def generate_content(
     enabled_map = {r.source_name: r.enabled for r in sources_result.scalars().all()}
 
     metadata = lesson.sources_metadata or []
-    if metadata and enabled_map:
-        filtered = [
-            s.get("content", "")
-            for s in metadata
+    if metadata:
+        enabled_sources = [
+            s for s in metadata
             if not s.get("fetch_error")
-            and enabled_map.get(s.get("name"), True)
-            and s.get("content")
+            and enabled_map.get(s.get("name"), False)
         ]
-        content = "\n\n---\n\n".join(filtered) if filtered else (lesson.source_content or "")
+        parts: list[str] = []
+        for s in enabled_sources:
+            text: str = s.get("content") or ""
+            if not text and s.get("type") == "url" and s.get("name"):
+                try:
+                    text = await _fetch_url_text(s["name"])
+                except Exception:
+                    text = ""
+            if text:
+                parts.append(text)
+        content = "\n\n---\n\n".join(parts) if parts else (lesson.source_content or "")
     else:
         content = lesson.source_content or ""
 

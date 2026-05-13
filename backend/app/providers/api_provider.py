@@ -221,37 +221,61 @@ class APIProvider(BaseAIProvider):
     async def generate_reference_retelling(
         self, content, topic, language="ru"
     ) -> str:
-        cached = await get_cached("retelling", content=content[:500], topic=topic, language=language)
+        cached = await get_cached("retelling_v2", content=content[:500], topic=topic, language=language)
         if cached:
             return cached
 
-        system = "You are an expert educational assistant. Create structured, pedagogically sound summaries."
-        user = f"""Создай подробный структурированный учебный отчёт по теме "{topic}".
+        system = "You are an expert educational assistant. Create structured, exam-ready summaries from multiple sources."
+        user = f"""Сделай единый структурированный конспект по всем прикреплённым источникам.
 
-Используй СТРОГО эту структуру (с заголовками ##):
+Требования:
+- Прочитать и проанализировать все источники одновременно.
+- Выделить только ключевые идеи, определения, факты и выводы.
+- Убрать воду, повторения и второстепенную информацию.
+- Объединить одинаковые темы из разных источников.
+- Разделить конспект по темам и подтемам.
+- Если источники противоречат друг другу — отдельно указать различия.
+- Сложные термины объяснять простым языком.
+- Сохранять важные даты, имена, формулы и определения.
+- В конце каждого раздела делать краткий вывод.
 
-## Краткое изложение
-[3-5 предложений с главной идеей материала]
+Используй СТРОГО эту структуру (заголовки ##, списки через -):
+
+## Название темы
+[основная тема]
+
+## Основные понятия
+**[Термин]** — [определение простым языком]
 
 ## Ключевые идеи
 - [идея 1]
 - [идея 2]
-- [ещё идеи — минимум 4]
 
-## Важные понятия
-**[Термин 1]** — [краткое определение]
-**[Термин 2]** — [краткое определение]
+## Примеры и аргументы
+- [пример или аргумент]
 
-## Вывод
-[1-2 предложения с главным выводом]
+## Итог по теме
+[краткий вывод раздела]
+
+## Краткое summary
+[2-3 предложения по всему материалу]
+
+## Возможные вопросы к экзамену
+- [вопрос 1]
+- [вопрос 2]
+
+## Важно запомнить
+- [ключевой момент 1]
+- [ключевой момент 2]
 
 Материал:
-{content[:4000]}
+{content[:5000]}
 
-Язык: {language}"""
+Тема: {topic}
+Язык ответа: {language}"""
 
         result = self._call(system, user, max_tokens=1200)
-        await set_cached("retelling", result, content=content[:500], topic=topic, language=language)
+        await set_cached("retelling_v2", result, content=content[:500], topic=topic, language=language)
         return result
 
     async def chat_response(

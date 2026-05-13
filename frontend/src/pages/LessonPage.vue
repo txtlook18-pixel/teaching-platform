@@ -144,7 +144,14 @@
                 </div>
 
                 <template v-if="!collapsedSources.has(src.name)">
-                <template v-if="sourceSummaries[src.name]">
+                <!-- Video source: no summary available -->
+                <div v-if="isVideoUrl(src.name)" class="flex flex-col items-center gap-2 py-6 text-amber-500">
+                  <span class="text-2xl">🎬</span>
+                  <p class="text-sm font-medium">Видео-источник</p>
+                  <p class="text-xs text-gray-400">Конспект для видео не поддерживается</p>
+                </div>
+
+                <template v-else-if="sourceSummaries[src.name]">
                   <template v-for="(block, i) in parseRetellingBlocks(sourceSummaries[src.name])" :key="i">
                     <h3
                       v-if="block.type === 'heading'"
@@ -400,14 +407,22 @@
                 class="input-field pl-9 text-sm"
               />
             </div>
+            <p
+              v-if="activeTab !== 'materials' && filteredSources.some(s => !s.fetch_error && !isVideoUrl(s.name)) && selectedSources.size === 0"
+              class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2"
+            >
+              Отметьте материалы для генерации
+            </p>
             <div class="space-y-0.5 max-h-[480px] overflow-y-auto">
               <label
                 v-for="src in filteredSources"
                 :key="src.name"
                 class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors select-none"
-                :class="src.fetch_error
+                :class="src.fetch_error || isVideoUrl(src.name)
                   ? 'opacity-60 cursor-not-allowed'
-                  : 'hover:bg-gray-50 cursor-pointer ' + (selectedSources.has(src.name) ? '' : 'opacity-50')"
+                  : activeTab !== 'materials'
+                    ? 'hover:bg-gray-50 cursor-pointer ' + (selectedSources.has(src.name) ? '' : 'opacity-50')
+                    : ''"
               >
                 <span class="text-base shrink-0" :class="src.fetch_error ? 'grayscale' : ''">{{ sourceIcon(src) }}</span>
                 <span
@@ -417,6 +432,9 @@
                 >{{ src.name }}</span>
                 <template v-if="src.fetch_error">
                   <span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap">Ошибка</span>
+                </template>
+                <template v-else-if="isVideoUrl(src.name)">
+                  <span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap">Не поддерживается</span>
                 </template>
                 <template v-else-if="sourceLangs[src.name]">
                   <span
@@ -429,11 +447,12 @@
                   >⚠️</span>
                 </template>
                 <input
+                  v-if="activeTab !== 'materials' && !isVideoUrl(src.name)"
                   type="checkbox"
                   :checked="selectedSources.has(src.name)"
-                  :disabled="src.fetch_error || togglingSource === src.name"
+                  :disabled="src.fetch_error || togglingSource.has(src.name)"
                   class="w-4 h-4 rounded accent-blue-500 shrink-0"
-                  :class="src.fetch_error ? 'cursor-not-allowed opacity-40' : togglingSource === src.name ? 'opacity-50' : 'cursor-pointer'"
+                  :class="togglingSource.has(src.name) ? 'opacity-50 cursor-wait' : 'cursor-pointer'"
                   @change="toggleSource(src.name)"
                 />
               </label>
@@ -472,7 +491,7 @@ const selectedSources = ref<Set<string>>(new Set())
 const sourceLangs = ref<Record<string, { lang: string; supported: boolean }>>({})
 const reanalyzing = ref(false)
 const reanalyzeError = ref('')
-const togglingSource = ref<string | null>(null)
+const togglingSource = ref<Set<string>>(new Set())
 const collapsedSources = ref<Set<string>>(new Set())
 function toggleCollapse(name: string) {
   const next = new Set(collapsedSources.value)
@@ -617,15 +636,19 @@ async function generateOneSummary(srcName: string) {
       source_names: [srcName],
     })
     sourceSummaries.value[srcName] = res.data.summary
-  } catch {}
-  finally {
+  } catch (e: any) {
+    if (e.response?.data?.detail === 'error.video_no_summary') {
+      sourceSummaries.value[srcName] = '📹 Конспект для видео-источников недоступен — текстовое содержимое отсутствует.'
+    }
+    // other errors: leave unset so the "Сгенерировать конспект" button stays visible
+  } finally {
     loadingSourceSummaries.value[srcName] = false
   }
 }
 
 async function generateSourceSummaries() {
   if (!lesson.value) return
-  const sources = (lesson.value.sources_metadata ?? []).filter(s => !s.fetch_error)
+  const sources = (lesson.value.sources_metadata ?? []).filter(s => !s.fetch_error && !isVideoUrl(s.name))
   await Promise.all(sources.map(src => generateOneSummary(src.name)))
 }
 
@@ -646,26 +669,23 @@ async function loadSourceStates() {
     for (const s of res.data) {
       if (s.enabled) next.add(s.name)
     }
-    // sources absent from DB are enabled by default
-    for (const s of lesson.value.sources_metadata ?? []) {
-      if (!res.data.find(r => r.name === s.name)) next.add(s.name)
-    }
     selectedSources.value = next
   } catch {
-    // fallback: enable all
-    selectedSources.value = new Set((lesson.value?.sources_metadata ?? []).map(s => s.name))
+    selectedSources.value = new Set()
   }
 }
 
 async function toggleSource(name: string) {
-  if (togglingSource.value) return
+  if (togglingSource.value.has(name)) return
   // optimistic update
   const next = new Set(selectedSources.value)
   if (next.has(name)) next.delete(name)
   else next.add(name)
   selectedSources.value = next
 
-  togglingSource.value = name
+  const toggling = new Set(togglingSource.value)
+  toggling.add(name)
+  togglingSource.value = toggling
   try {
     await apiClient.patch(`/lessons/${lesson.value!.id}/sources/toggle`, { source_name: name })
   } catch {
@@ -675,7 +695,9 @@ async function toggleSource(name: string) {
     else rollback.add(name)
     selectedSources.value = rollback
   } finally {
-    togglingSource.value = null
+    const done = new Set(togglingSource.value)
+    done.delete(name)
+    togglingSource.value = done
   }
 }
 
@@ -686,7 +708,13 @@ function sourceDisplayName(src: SourceMeta): string {
   return src.name
 }
 
+const VIDEO_HOSTS = /youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv/i
+function isVideoUrl(name: string): boolean {
+  return VIDEO_HOSTS.test(name)
+}
+
 function sourceIcon(src: SourceMeta): string {
+  if (src.type === 'url' && isVideoUrl(src.name)) return '🎬'
   if (src.type === 'url')  return '🔗'
   if (src.type === 'text') return '📝'
   const ext = src.name.split('.').pop()?.toLowerCase()
@@ -764,6 +792,11 @@ async function loadExtraTopics() {
 
 async function handleCreateAssignment() {
   if (!selectedType.value || !lesson.value) return
+  const hasSourceList = (lesson.value.sources_metadata ?? []).some(s => !s.fetch_error && !isVideoUrl(s.name))
+  if (hasSourceList && selectedSources.value.size === 0) {
+    createError.value = 'Выберите хотя бы один материал для генерации задания'
+    return
+  }
   creating.value = true
   createError.value = ''
   try {
@@ -786,6 +819,10 @@ async function handleCreateAssignment() {
     })
     const assignmentId = res.data.id
     await apiClient.post(`/assignments/${assignmentId}/generate`)
+
+    // Reset source selections so next visit starts with all unchecked
+    try { await apiClient.delete(`/lessons/${lesson.value.id}/sources`) } catch {}
+    selectedSources.value = new Set()
 
     if (isRetelling) {
       router.push(`/lessons/${lesson.value.id}/retelling/${assignmentId}`)
