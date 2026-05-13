@@ -1,3 +1,4 @@
+import random
 import secrets
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends
@@ -159,19 +160,29 @@ async def generate_content(
 
     ai = get_ai_provider()
 
-    # Build content from enabled sources only; fall back to full source_content
-    sources_result = await db.execute(
-        select(LessonSource).where(LessonSource.lesson_id == lesson.id)
-    )
-    enabled_map = {r.source_name: r.enabled for r in sources_result.scalars().all()}
+    # Build content from enabled sources only; fall back to full source_content.
+    # Prefer stored source_names from settings_data (set at creation time so that
+    # retry always uses the same material regardless of current sidebar selections).
+    stored_names: list[str] | None = (assignment.settings_data or {}).get("source_names")
 
     metadata = lesson.sources_metadata or []
     if metadata:
-        enabled_sources = [
-            s for s in metadata
-            if not s.get("fetch_error")
-            and enabled_map.get(s.get("name"), False)
-        ]
+        if stored_names is not None:
+            enabled_sources = [
+                s for s in metadata
+                if not s.get("fetch_error")
+                and s.get("name") in stored_names
+            ]
+        else:
+            sources_result = await db.execute(
+                select(LessonSource).where(LessonSource.lesson_id == lesson.id)
+            )
+            enabled_map = {r.source_name: r.enabled for r in sources_result.scalars().all()}
+            enabled_sources = [
+                s for s in metadata
+                if not s.get("fetch_error")
+                and enabled_map.get(s.get("name"), False)
+            ]
         parts: list[str] = []
         for s in enabled_sources:
             text: str = s.get("content") or ""
@@ -240,12 +251,27 @@ async def generate_content(
         assignment.questions_data = {"cases": cases, "type": "analysis", "topic": analysis_topic}
 
     elif atype == "cards":
-        cards = await ai.generate_flashcards(
-            content=content,
-            count=assignment.question_count,
-            language=lesson.language,
-            exclude_terms=body.exclude_terms,
-        )
+        if len(parts) > 1:
+            # Generate proportionally from each source then shuffle so cards are mixed.
+            count_per = max(2, assignment.question_count // len(parts))
+            all_cards: list[dict] = []
+            for part in parts:
+                source_cards = await ai.generate_flashcards(
+                    content=part,
+                    count=count_per,
+                    language=lesson.language,
+                    exclude_terms=body.exclude_terms,
+                )
+                all_cards.extend(source_cards)
+            random.shuffle(all_cards)
+            cards = all_cards[:assignment.question_count]
+        else:
+            cards = await ai.generate_flashcards(
+                content=content,
+                count=assignment.question_count,
+                language=lesson.language,
+                exclude_terms=body.exclude_terms,
+            )
         assignment.questions_data = {"cards": cards, "type": "cards"}
 
     elif atype == "retelling":

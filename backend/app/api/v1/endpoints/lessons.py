@@ -229,7 +229,7 @@ async def _fetch_oembed_text(url: str) -> str:
     return ""
 
 
-_VIDEO_HOSTS = re.compile(r"youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv", re.I)
+_VIDEO_HOSTS = re.compile(r"youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv|reddit\.com", re.I)
 
 
 async def _fetch_url_text(url: str) -> str:
@@ -471,7 +471,11 @@ async def generate_summary(
             content = "\n\n---\n\n".join(parts)
         elif is_video_only:
             raise HTTPException(status_code=422, detail="error.video_no_summary")
-        # else: no content found for non-video source — fall back to lesson.source_content
+        else:
+            # Specific sources were requested but no content could be retrieved.
+            # Do NOT fall back to lesson.source_content — that causes duplicate summaries
+            # because multiple sources share the same combined lesson text as prefix.
+            raise HTTPException(status_code=422, detail="error.source_no_content")
 
     topic = (lesson.cluster_data or {}).get("main_topic", lesson.title)
     ai = get_ai_provider()

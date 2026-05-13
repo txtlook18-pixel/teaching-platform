@@ -407,29 +407,19 @@
                 class="input-field pl-9 text-sm"
               />
             </div>
-            <p
-              v-if="activeTab !== 'materials' && filteredSources.some(s => !s.fetch_error && !isVideoUrl(s.name)) && selectedSources.size === 0"
-              class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2"
-            >
-              Отметьте материалы для генерации
-            </p>
             <div class="space-y-0.5 max-h-[480px] overflow-y-auto">
-              <label
+              <div
                 v-for="src in filteredSources"
                 :key="src.name"
-                class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors select-none"
-                :class="isInvalidSource(src) || isVideoUrl(src.name)
-                  ? 'opacity-60 cursor-not-allowed pointer-events-none'
-                  : activeTab !== 'materials'
-                    ? 'hover:bg-gray-50 cursor-pointer ' + (selectedSources.has(src.name) ? '' : 'opacity-50')
-                    : ''"
+                class="flex items-center gap-3 px-2 py-2 rounded-lg select-none"
+                :class="isInvalidSource(src) || isVideoUrl(src.name) ? 'opacity-60' : ''"
               >
                 <span class="text-base shrink-0" :class="isInvalidSource(src) ? 'grayscale' : ''">{{ sourceIcon(src) }}</span>
                 <span
                   class="flex-1 truncate text-sm shrink min-w-0"
                   :class="isInvalidSource(src) ? 'text-red-500 line-through' : 'text-gray-700'"
                   :title="src.name"
-                >{{ src.name }}</span>
+                >{{ sourceDisplayName(src) }}</span>
                 <template v-if="isInvalidSource(src)">
                   <span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap">Ошибка</span>
                 </template>
@@ -446,16 +436,7 @@
                     class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium shrink-0"
                   >⚠️</span>
                 </template>
-                <input
-                  v-if="activeTab !== 'materials' && !isVideoUrl(src.name)"
-                  type="checkbox"
-                  :checked="selectedSources.has(src.name)"
-                  :disabled="isInvalidSource(src) || togglingSource.has(src.name)"
-                  class="w-4 h-4 rounded accent-blue-500 shrink-0"
-                  :class="togglingSource.has(src.name) ? 'opacity-50 cursor-wait' : 'cursor-pointer'"
-                  @change="toggleSource(src.name)"
-                />
-              </label>
+              </div>
               <p v-if="!filteredSources.length" class="text-sm text-gray-400 text-center py-6">
                 {{ t('lesson.sidebar.noMaterials') }}
               </p>
@@ -637,8 +618,11 @@ async function generateOneSummary(srcName: string) {
     })
     sourceSummaries.value[srcName] = res.data.summary
   } catch (e: any) {
-    if (e.response?.data?.detail === 'error.video_no_summary') {
+    const detail = e.response?.data?.detail
+    if (detail === 'error.video_no_summary') {
       sourceSummaries.value[srcName] = '📹 Конспект для видео-источников недоступен — текстовое содержимое отсутствует.'
+    } else if (detail === 'error.source_no_content') {
+      sourceSummaries.value[srcName] = '⚠️ Не удалось получить содержимое источника для генерации конспекта.'
     }
     // other errors: leave unset so the "Сгенерировать конспект" button stays visible
   } finally {
@@ -708,7 +692,7 @@ function sourceDisplayName(src: SourceMeta): string {
   return src.name
 }
 
-const VIDEO_HOSTS = /youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv/i
+const VIDEO_HOSTS = /youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv|reddit\.com/i
 function isVideoUrl(name: string): boolean {
   return VIDEO_HOSTS.test(name)
 }
@@ -805,11 +789,6 @@ async function loadExtraTopics() {
 
 async function handleCreateAssignment() {
   if (!selectedType.value || !lesson.value) return
-  const hasSourceList = (lesson.value.sources_metadata ?? []).some(s => !s.fetch_error && !isVideoUrl(s.name))
-  if (hasSourceList && selectedSources.value.size === 0) {
-    createError.value = 'Выберите хотя бы один материал для генерации задания'
-    return
-  }
   creating.value = true
   createError.value = ''
   try {
@@ -818,6 +797,9 @@ async function handleCreateAssignment() {
     const isTest     = selectedType.value === 'test'
     const isAnalysis = selectedType.value === 'analysis'
     const isBattle   = selectedType.value === 'battle'
+    const sourceNames = (lesson.value.sources_metadata ?? [])
+      .filter(s => !isInvalidSource(s) && !isVideoUrl(s.name))
+      .map(s => s.name)
     const res = await apiClient.post(`/assignments/lessons/${lesson.value.id}/assignments`, {
       assignment_type: selectedType.value,
       question_count: isRetelling || isAnalysis || isBattle ? 1 : questionCount.value,
@@ -825,17 +807,13 @@ async function handleCreateAssignment() {
         ? battleTimer.value
         : (isRetelling || isCards || isAnalysis || (isTest && testMode.value === 'individual')) ? 0 : timerSeconds.value,
       settings_data: isTest
-        ? { mode: testMode.value }
+        ? { mode: testMode.value, source_names: sourceNames }
         : isAnalysis
-          ? { topic: selectedAnalysisTopic.value }
-          : undefined,
+          ? { topic: selectedAnalysisTopic.value, source_names: sourceNames }
+          : sourceNames.length ? { source_names: sourceNames } : undefined,
     })
     const assignmentId = res.data.id
     await apiClient.post(`/assignments/${assignmentId}/generate`)
-
-    // Reset source selections so next visit starts with all unchecked
-    try { await apiClient.delete(`/lessons/${lesson.value.id}/sources`) } catch {}
-    selectedSources.value = new Set()
 
     if (isRetelling) {
       router.push(`/lessons/${lesson.value.id}/retelling/${assignmentId}`)

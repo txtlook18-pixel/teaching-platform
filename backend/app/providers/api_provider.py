@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from typing import List, Dict, Any
@@ -221,7 +222,8 @@ class APIProvider(BaseAIProvider):
     async def generate_reference_retelling(
         self, content, topic, language="ru"
     ) -> str:
-        cached = await get_cached("retelling_v2", content=content[:500], topic=topic, language=language)
+        content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()[:20]
+        cached = await get_cached("retelling_v2", content_hash=content_hash, topic=topic, language=language)
         if cached:
             return cached
 
@@ -275,7 +277,7 @@ class APIProvider(BaseAIProvider):
 Язык ответа: {language}"""
 
         result = self._call(system, user, max_tokens=1200)
-        await set_cached("retelling_v2", result, content=content[:500], topic=topic, language=language)
+        await set_cached("retelling_v2", result, content_hash=content_hash, topic=topic, language=language)
         return result
 
     async def chat_response(

@@ -404,7 +404,7 @@ function isValidUrl(url: string): boolean {
 
 function urlTypeKey(url: string): 'video' | 'file' | 'page' {
   const u = url.toLowerCase()
-  if (/youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv/.test(u)) return 'video'
+  if (/youtube\.com|youtu\.be|vimeo\.com|rutube\.ru|tiktok\.com|twitch\.tv|reddit\.com/.test(u)) return 'video'
   if (/\.(pdf|docx?|xlsx?|pptx?|txt|md|csv|zip|rar)(\?.*)?$/.test(u)) return 'file'
   return 'page'
 }
