@@ -120,7 +120,7 @@
 
             <!-- Per-source summary cards -->
             <template
-              v-for="src in (lesson.sources_metadata ?? []).filter(s => !s.fetch_error)"
+              v-for="src in (lesson.sources_metadata ?? []).filter(s => !isInvalidSource(s))"
               :key="src.name"
             >
               <div class="card mb-4">
@@ -418,19 +418,19 @@
                 v-for="src in filteredSources"
                 :key="src.name"
                 class="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors select-none"
-                :class="src.fetch_error || isVideoUrl(src.name)
-                  ? 'opacity-60 cursor-not-allowed'
+                :class="isInvalidSource(src) || isVideoUrl(src.name)
+                  ? 'opacity-60 cursor-not-allowed pointer-events-none'
                   : activeTab !== 'materials'
                     ? 'hover:bg-gray-50 cursor-pointer ' + (selectedSources.has(src.name) ? '' : 'opacity-50')
                     : ''"
               >
-                <span class="text-base shrink-0" :class="src.fetch_error ? 'grayscale' : ''">{{ sourceIcon(src) }}</span>
+                <span class="text-base shrink-0" :class="isInvalidSource(src) ? 'grayscale' : ''">{{ sourceIcon(src) }}</span>
                 <span
                   class="flex-1 truncate text-sm shrink min-w-0"
-                  :class="src.fetch_error ? 'text-red-500 line-through' : 'text-gray-700'"
+                  :class="isInvalidSource(src) ? 'text-red-500 line-through' : 'text-gray-700'"
                   :title="src.name"
                 >{{ src.name }}</span>
-                <template v-if="src.fetch_error">
+                <template v-if="isInvalidSource(src)">
                   <span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap">Ошибка</span>
                 </template>
                 <template v-else-if="isVideoUrl(src.name)">
@@ -450,7 +450,7 @@
                   v-if="activeTab !== 'materials' && !isVideoUrl(src.name)"
                   type="checkbox"
                   :checked="selectedSources.has(src.name)"
-                  :disabled="src.fetch_error || togglingSource.has(src.name)"
+                  :disabled="isInvalidSource(src) || togglingSource.has(src.name)"
                   class="w-4 h-4 rounded accent-blue-500 shrink-0"
                   :class="togglingSource.has(src.name) ? 'opacity-50 cursor-wait' : 'cursor-pointer'"
                   @change="toggleSource(src.name)"
@@ -648,7 +648,7 @@ async function generateOneSummary(srcName: string) {
 
 async function generateSourceSummaries() {
   if (!lesson.value) return
-  const sources = (lesson.value.sources_metadata ?? []).filter(s => !s.fetch_error && !isVideoUrl(s.name))
+  const sources = (lesson.value.sources_metadata ?? []).filter(s => !isInvalidSource(s) && !isVideoUrl(s.name))
   await Promise.all(sources.map(src => generateOneSummary(src.name)))
 }
 
@@ -713,6 +713,19 @@ function isVideoUrl(name: string): boolean {
   return VIDEO_HOSTS.test(name)
 }
 
+function isInvalidSource(src: SourceMeta): boolean {
+  if (src.fetch_error) return true
+  if (src.type === 'url') {
+    try {
+      const u = new URL(src.name)
+      return u.protocol !== 'http:' && u.protocol !== 'https:'
+    } catch {
+      return true
+    }
+  }
+  return false
+}
+
 function sourceIcon(src: SourceMeta): string {
   if (src.type === 'url' && isVideoUrl(src.name)) return '🎬'
   if (src.type === 'url')  return '🔗'
@@ -765,7 +778,7 @@ onMounted(async () => {
     loading.value = false
   }
   detectSourceLangs()
-  const validSources = (lesson.value?.sources_metadata ?? []).filter(s => !s.fetch_error)
+  const validSources = (lesson.value?.sources_metadata ?? []).filter(s => !isInvalidSource(s))
   if (validSources.length) {
     collapsedSources.value = new Set(validSources.map(s => s.name))
     generateSourceSummaries()

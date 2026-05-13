@@ -372,14 +372,22 @@ async def analyze_lesson(
     if not lesson.source_content and not lesson.sources_metadata:
         raise HTTPException(status_code=400, detail="No content to analyze")
 
-    # Build balanced excerpt: take proportional chars from each source so
-    # all sources are represented within the AI's ~3000-char context window.
+    # Build balanced excerpt from ALL sources (including URLs fetched on-the-fly)
+    # so the generated main_topic reflects all lesson materials, not just stored ones.
     metadata = lesson.sources_metadata or []
-    valid_sources = [s for s in metadata if not s.get("fetch_error") and s.get("content")]
-    if valid_sources:
-        chars_each = max(500, 2800 // len(valid_sources))
-        parts = [s["content"][:chars_each] for s in valid_sources]
-        analyze_content = "\n\n---\n\n".join(parts)
+    if metadata:
+        all_parts = []
+        for s in metadata:
+            if s.get("fetch_error"):
+                continue
+            text = await _source_content(s)
+            if text:
+                all_parts.append(text)
+        if all_parts:
+            chars_each = max(500, 2800 // len(all_parts))
+            analyze_content = "\n\n---\n\n".join(p[:chars_each] for p in all_parts)
+        else:
+            analyze_content = lesson.source_content or ""
     else:
         analyze_content = lesson.source_content or ""
 

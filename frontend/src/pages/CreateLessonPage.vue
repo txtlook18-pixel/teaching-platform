@@ -69,8 +69,12 @@
                     <button type="button" class="text-xs text-blue-600 font-semibold shrink-0 hover:text-blue-700" @click="src.editing = false">{{ t('createLesson.saveBtn') }}</button>
                   </template>
                   <template v-else>
-                    <span class="flex-1 truncate text-sm text-blue-600">{{ src.url }}</span>
-                    <span class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 font-medium" :class="urlTypeBadgeClass(src.url)">{{ urlTypeIcon(src.url) }} {{ t(`createLesson.urlType.${urlTypeKey(src.url)}`) }}</span>
+                    <span
+                      class="flex-1 truncate text-sm"
+                      :class="isValidUrl(src.url) ? 'text-blue-600' : 'text-red-500 line-through'"
+                    >{{ src.url }}</span>
+                    <span v-if="!isValidUrl(src.url)" class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 font-medium bg-red-50 text-red-500">Ошибка</span>
+                    <span v-else class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full shrink-0 font-medium" :class="urlTypeBadgeClass(src.url)">{{ urlTypeIcon(src.url) }} {{ t(`createLesson.urlType.${urlTypeKey(src.url)}`) }}</span>
                     <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors shrink-0 text-base" @click="src.editing = true">✏️</button>
                   </template>
                   <button type="button" class="ml-1 text-gray-300 hover:text-red-500 transition-colors text-lg leading-none shrink-0" @click="removeSource(i)">×</button>
@@ -387,6 +391,15 @@ function formatSize(bytes: number): string {
 function fileIcon(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase()
   return ({ pdf: '📕', docx: '📘', doc: '📘', md: '📋', txt: '📄' } as Record<string, string>)[ext ?? ''] ?? '📄'
+}
+
+function isValidUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
 }
 
 function urlTypeKey(url: string): 'video' | 'file' | 'page' {
